@@ -1,0 +1,1145 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>C1 Training</title>
+<script src="https://accounts.google.com/gsi/client" async defer></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@500&display=swap');
+
+  :root {
+    --paper: #F1F0EA;
+    --card: #FFFFFF;
+    --line: #D8D4C4;
+    --line-strong: #B7B29C;
+    --ink: #16181A;
+    --ink-soft: #56534A;
+    --navy: #063971;
+    --navy-soft: #E3EAF1;
+    --good: #037A45;
+    --good-bg: #DCEEE1;
+    --bad: #C1121C;
+    --bad-bg: #F6DCDC;
+    --amber: #B8791A;
+    --amber-bg: #F2E3C4;
+
+    /* Leitfarben — one fixed flag color per module, Aicher-style */
+    --mod-wortschatz: #C98A1E;
+    --mod-wortschatz-bg: #F2E3C4;
+    --mod-grammatik: #C1121C;
+    --mod-grammatik-bg: #F6DCDC;
+    --mod-lesen: #037A45;
+    --mod-lesen-bg: #DCEEE1;
+    --mod-hoeren: #063971;
+    --mod-hoeren-bg: #E3EAF1;
+    --mod-schreiben: #2B2B2B;
+    --mod-schreiben-bg: #E4E4E1;
+    --mod-fehler: #6B6858;
+    --mod-fehler-bg: #E9E7DD;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: 'IBM Plex Sans', sans-serif;
+    background: var(--paper);
+    color: var(--ink);
+  }
+  .eyebrow {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.12em;
+    color: var(--ink-soft);
+    text-transform: uppercase;
+  }
+  h1, h2, h3 { font-family: 'Archivo', sans-serif; font-weight: 600; margin: 0; letter-spacing: -0.01em; }
+
+  /* ---------- shell / nav ---------- */
+  .shell { display: grid; grid-template-columns: 220px 1fr; min-height: 100vh; }
+  .sidebar {
+    background: var(--ink);
+    color: var(--paper);
+    padding: 24px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+  .brand {
+    font-family: 'Archivo', sans-serif;
+    font-size: 19px;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+    padding: 0 10px 22px 10px;
+    text-transform: uppercase;
+  }
+  .navitem {
+    display: flex;
+    align-items: center;
+    gap: 11px;
+    padding: 10px 10px;
+    border-radius: 2px;
+    font-size: 13px;
+    font-family: 'IBM Plex Mono', monospace;
+    letter-spacing: 0.03em;
+    cursor: pointer;
+    color: rgba(241,240,234,0.65);
+  }
+  .navitem:hover { background: rgba(241,240,234,0.08); color: var(--paper); }
+  .navitem.active { background: rgba(241,240,234,0.12); color: var(--paper); font-weight: 500; }
+  .navitem .dot {
+    width: 10px; height: 10px; border-radius: 1px;
+    background: var(--flag, currentColor); opacity: 0.55; flex-shrink: 0;
+  }
+  .navitem.active .dot { opacity: 1; }
+
+  .main { padding: 32px 40px 80px; max-width: 920px; }
+  .page { display: none; }
+  .page.active { display: block; }
+
+  /* ---------- shared components ---------- */
+  .card {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-left: 3px solid var(--line-strong);
+    border-radius: 2px;
+    padding: 20px 24px;
+  }
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+  .stat {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 2px;
+    padding: 16px 18px;
+  }
+  .stat .num { font-family: 'IBM Plex Mono', monospace; font-size: 26px; font-weight: 500; color: var(--navy); }
+  .stat .label { font-size: 12px; color: var(--ink-soft); margin-top: 2px; }
+
+  .tag {
+    display: inline-flex;
+    align-items: center;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.05em;
+    padding: 2px 8px;
+    border-radius: 1px;
+    background: var(--navy-soft);
+    color: var(--navy);
+  }
+  .tag.stil-ugs { background: var(--amber-bg); color: var(--amber); }
+  .tag.stil-geh { background: #E2E7EC; color: #3A4C5E; }
+
+  .btn {
+    font-family: 'IBM Plex Mono', monospace;
+    font-weight: 500;
+    font-size: 12px;
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+    padding: 10px 18px;
+    border-radius: 1px;
+    cursor: pointer;
+    border: none;
+  }
+  .btn-primary { background: var(--navy); color: var(--paper); }
+  .btn-ghost { background: transparent; border: 1px solid var(--line-strong); color: var(--ink); }
+
+  .img-slot {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: repeating-linear-gradient(45deg, #F1ECDD, #F1ECDD 6px, #EAE3CE 6px, #EAE3CE 12px);
+    border: 1px dashed var(--line-strong);
+    border-radius: 6px;
+    color: var(--ink-soft);
+    font-size: 12px;
+    text-align: center;
+    padding: 10px;
+  }
+
+  /* ---------- Wortschatz ---------- */
+  .vocab-card { max-width: 480px; margin: 0 auto; }
+  .vocab-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 14px; }
+  .lemma { font-family: 'Archivo', sans-serif; font-size: 23px; font-weight: 700; letter-spacing: -0.01em; }
+  .stufe-track { display: flex; gap: 4px; margin-bottom: 18px; }
+  .stufe-dot { height: 4px; flex: 1; border-radius: 0; background: var(--line); }
+  .stufe-dot.done { background: var(--mod-wortschatz); }
+  .ladder-row { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--line); font-size: 14px; }
+  .ladder-level { font-family: 'IBM Plex Mono', monospace; font-size: 10px; color: var(--paper); background: var(--ink-soft); border-radius: 1px; padding: 2px 6px; width: 26px; text-align: center; }
+  .opt-list { display: flex; flex-direction: column; gap: 8px; margin-top: 16px; }
+  .opt {
+    text-align: left; font-size: 14px; padding: 10px 14px;
+    border: 1px solid var(--line-strong); border-radius: 1px; background: var(--card); cursor: pointer;
+  }
+  .opt.correct { background: var(--good-bg); border-color: var(--good); }
+  .opt.wrong { background: var(--bad-bg); border-color: var(--bad); }
+  .opt:disabled { cursor: default; }
+
+  .session-track { display: flex; gap: 3px; max-width: 480px; margin: 0 auto 22px; }
+  .session-dot { height: 3px; flex: 1; background: var(--line); }
+  .session-dot.done { background: var(--mod-wortschatz); }
+  .session-dot.now { background: var(--ink); }
+
+  .cloze-sentence { font-size: 15px; line-height: 1.8; background: var(--paper); border: 1px solid var(--line); padding: 14px 16px; margin: 10px 0 14px; }
+  .cloze-input {
+    width: 100%; font-family: 'IBM Plex Sans', sans-serif; font-size: 14px;
+    padding: 10px 12px; border: 1px solid var(--line-strong); border-radius: 1px; background: var(--card);
+  }
+  .cloze-input.correct { border-color: var(--good); background: var(--good-bg); }
+  .cloze-input.wrong { border-color: var(--bad); background: var(--bad-bg); }
+  .cloze-feedback { font-size: 13px; margin-top: 8px; color: var(--ink-soft); }
+
+  .prod-textarea {
+    width: 100%; min-height: 90px; font-family: 'IBM Plex Sans', sans-serif; font-size: 14px;
+    line-height: 1.6; padding: 12px 14px; border: 1px solid var(--line-strong); border-radius: 1px;
+    background: var(--card); resize: vertical; margin: 10px 0 6px;
+  }
+
+  .quality-row { display: flex; gap: 8px; margin-top: 14px; }
+  .quality-btn {
+    flex: 1; font-family: 'IBM Plex Mono', monospace; font-size: 11px; letter-spacing: 0.03em;
+    text-transform: uppercase; padding: 10px 6px; border-radius: 1px; cursor: pointer; text-align: center;
+    border: 1px solid var(--line-strong); background: var(--card);
+  }
+  .quality-btn[data-q="1"]:hover { border-color: var(--bad); color: var(--bad); }
+  .quality-btn[data-q="2"]:hover { border-color: var(--amber); color: var(--amber); }
+  .quality-btn[data-q="3"]:hover { border-color: var(--good); color: var(--good); }
+
+  .complete-box { max-width: 420px; margin: 60px auto; text-align: center; }
+  .complete-mark {
+    width: 52px; height: 52px; border-radius: 1px; background: var(--mod-wortschatz);
+    color: #fff; display: flex; align-items: center; justify-content: center;
+    font-size: 24px; margin: 0 auto 18px; font-family: 'Archivo', sans-serif;
+  }
+
+  /* ---------- Login gate ---------- */
+  #login-gate {
+    position: fixed; inset: 0; background: var(--paper); color: var(--ink);
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: 18px; z-index: 999;
+  }
+  #login-gate .lg-card {
+    background: var(--card); border: 1px solid var(--line); border-top: 3px solid var(--navy);
+    border-radius: 2px; padding: 44px 48px; display: flex; flex-direction: column;
+    align-items: center; gap: 16px; max-width: 340px; box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+  }
+  #login-gate .lg-title { font-family: 'Archivo', sans-serif; font-size: 22px; font-weight: 700; text-transform: uppercase; letter-spacing: -0.01em; }
+  #login-gate .lg-sub { font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: var(--ink-soft); letter-spacing: 0.08em; margin-top: -12px; }
+  #login-gate .lg-hint { font-size: 12px; color: var(--ink-soft); max-width: 260px; text-align: center; line-height: 1.6; margin-top: 4px; }
+
+  #user-badge {
+    display: flex; align-items: center; gap: 8px; padding: 8px 10px; margin-top: 10px;
+    border-radius: 2px; background: rgba(241,240,234,0.06); cursor: pointer;
+  }
+  #user-badge img { width: 22px; height: 22px; border-radius: 1px; }
+  #user-badge span { font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: rgba(241,240,234,0.7); }
+
+  /* ---------- Grammatik ---------- */
+  .drill-box { padding: 20px 24px; }
+  .drill-input {
+    width: 100%; font-family: 'IBM Plex Sans', sans-serif; font-size: 14px;
+    padding: 10px 12px; border: 1px solid var(--line-strong); border-radius: 5px;
+    margin: 10px 0; background: var(--paper);
+  }
+  .topic-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .topic-card {
+    background: var(--card); border: 1px solid var(--line); border-left: 3px solid var(--mod-grammatik);
+    border-radius: 2px; padding: 16px 18px; cursor: pointer; text-align: left;
+  }
+  .topic-card:hover { border-color: var(--mod-grammatik); }
+  .topic-card .tt { font-family: 'Archivo', sans-serif; font-weight: 700; font-size: 15px; margin-bottom: 6px; }
+  .topic-card .td { font-size: 12px; color: var(--ink-soft); line-height: 1.5; margin-bottom: 10px; }
+  .topic-progress-bar { height: 4px; background: var(--line); border-radius: 0; overflow: hidden; }
+  .topic-progress-fill { height: 100%; background: var(--mod-grammatik); }
+  .topic-progress-label { font-size: 11px; color: var(--ink-soft); margin-top: 5px; font-family: 'IBM Plex Mono', monospace; }
+
+  .level-pills { display: flex; gap: 6px; margin: 18px 0 22px; flex-wrap: wrap; }
+  .level-pill {
+    font-family: 'IBM Plex Mono', monospace; font-size: 12px; padding: 6px 14px;
+    border: 1px solid var(--line-strong); border-radius: 20px; cursor: pointer; background: var(--card);
+  }
+  .level-pill.active { background: var(--mod-grammatik); border-color: var(--mod-grammatik); color: #fff; }
+
+  .gr-ex-card {
+    background: var(--card); border: 1px solid var(--line); border-radius: 2px;
+    padding: 16px 18px; margin-bottom: 10px;
+  }
+  .gr-ex-card.correct { border-left: 3px solid var(--good); }
+  .gr-ex-card.wrong { border-left: 3px solid var(--bad); }
+  .gr-ex-num { font-family: 'IBM Plex Mono', monospace; font-size: 10px; color: var(--ink-soft); letter-spacing: 0.05em; margin-bottom: 6px; }
+  .gr-ex-prompt { font-size: 14.5px; line-height: 1.6; margin-bottom: 4px; }
+  .gr-ex-task { font-size: 12.5px; color: var(--ink-soft); font-style: italic; margin-bottom: 10px; }
+
+  /* ---------- Lesen/Hören ---------- */
+  .modellsatz-row {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 14px 18px; border-bottom: 1px solid var(--line);
+  }
+  .progress-bar { width: 90px; height: 5px; background: var(--line); border-radius: 3px; overflow: hidden; }
+  .progress-fill { height: 100%; background: var(--navy); }
+
+  /* ---------- Schreiben ---------- */
+  textarea.essay {
+    width: 100%; min-height: 220px; font-family: 'IBM Plex Sans', sans-serif; font-size: 14px;
+    line-height: 1.6; padding: 14px; border: 1px solid var(--line-strong); border-radius: 6px; background: var(--card);
+    resize: vertical;
+  }
+  .rubric-row { display: grid; grid-template-columns: 140px 1fr 90px; align-items: center; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--line); font-size: 13px; }
+  .rubric-track { height: 6px; background: var(--line); border-radius: 3px; overflow: hidden; }
+  .rubric-fill { height: 100%; background: var(--navy); }
+  .rubric-score { font-family: 'IBM Plex Mono', monospace; text-align: right; color: var(--navy); }
+
+  /* ---------- Fehlertagebuch ---------- */
+  .fehler-row { display: flex; gap: 14px; padding: 14px 0; border-bottom: 1px solid var(--line); }
+  .fehler-x { color: var(--bad); text-decoration: line-through; font-size: 13px; }
+  .fehler-ok { color: var(--good); font-size: 13px; font-weight: 500; }
+</style>
+</head>
+<body>
+
+<div id="login-gate">
+  <div class="lg-card">
+    <div class="lg-title">C1 Training</div>
+    <div class="lg-sub">ANMELDEN, UM FORTZUFAHREN</div>
+    <div id="gsi-button-slot"></div>
+    <p class="lg-hint">Ihr Fortschritt wird mit Ihrem Google-Konto verknüpft und in Google Sheets gespeichert.</p>
+  </div>
+</div>
+
+<div class="shell">
+  <nav class="sidebar">
+    <div class="brand">C1 Training</div>
+    <div class="navitem active" data-page="dashboard"><span class="dot" style="--flag:#F1F0EA;"></span>01 Dashboard</div>
+    <div class="navitem" data-page="wortschatz"><span class="dot" style="--flag:var(--mod-wortschatz);"></span>02 Wortschatz</div>
+    <div class="navitem" data-page="grammatik"><span class="dot" style="--flag:var(--mod-grammatik);"></span>03 Grammatik</div>
+    <div class="navitem" data-page="lesen"><span class="dot" style="--flag:var(--mod-lesen);"></span>04 Lesen</div>
+    <div class="navitem" data-page="hoeren"><span class="dot" style="--flag:var(--mod-hoeren);"></span>05 Hören</div>
+    <div class="navitem" data-page="schreiben"><span class="dot" style="--flag:#E4E4E1;"></span>06 Schreiben</div>
+    <div class="navitem" data-page="fehler"><span class="dot" style="--flag:var(--mod-fehler);"></span>07 Fehler</div>
+    <div style="flex:1;"></div>
+    <div id="user-badge" style="display:none;"></div>
+  </nav>
+
+  <main class="main">
+
+    <!-- ================= DASHBOARD ================= -->
+    <section class="page active" id="page-dashboard">
+      <p class="eyebrow">Übersicht</p>
+      <h1 style="font-size:28px; margin-bottom:24px;">Guten Tag.</h1>
+
+      <div class="grid-3" style="margin-bottom:24px;">
+        <div class="stat"><div class="num">42</div><div class="label">Karten heute fällig</div></div>
+        <div class="stat"><div class="num">11</div><div class="label">Tage Streak</div></div>
+        <div class="stat"><div class="num">76%</div><div class="label">Letzter Lesen-Test</div></div>
+      </div>
+
+      <div class="card" style="margin-bottom:16px;">
+        <p class="eyebrow" style="margin-bottom:10px;">Empfohlen für heute</p>
+        <div style="display:flex; gap:12px; flex-wrap:wrap;">
+          <button class="btn btn-primary">Wortschatz wiederholen (42)</button>
+          <button class="btn btn-ghost">1 Konnektor-Drill</button>
+          <button class="btn btn-ghost">Schreiben Teil 2 üben</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <p class="eyebrow" style="margin-bottom:10px;">Fehlerschwerpunkte diese Woche</p>
+        <div class="fehler-row" style="border-bottom:none; padding:6px 0;">
+          <span class="fehler-x">Konjunktiv II Vergangenheit</span>
+          <span style="color:var(--ink-soft); font-size:13px;">4× falsch</span>
+        </div>
+        <div class="fehler-row" style="border-bottom:none; padding:6px 0;">
+          <span class="fehler-x">Register in E-Mail (zu informell)</span>
+          <span style="color:var(--ink-soft); font-size:13px;">2× falsch</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= WORTSCHATZ ================= -->
+    <section class="page" id="page-wortschatz">
+      <p class="eyebrow" id="wz-progress">02 — Wortschatz</p>
+      <h1 style="font-size:24px; margin-bottom:20px;">Wiederholung</h1>
+
+      <div id="wz-session-track" class="session-track"></div>
+      <div id="wz-card-slot"></div>
+      <div id="wz-session-complete" style="display:none;"></div>
+    </section>
+
+    <!-- ================= GRAMMATIK ================= -->
+    <section class="page" id="page-grammatik">
+      <div id="gr-topic-list"></div>
+      <div id="gr-topic-detail" style="display:none;"></div>
+    </section>
+
+    <!-- ================= LESEN ================= -->
+    <section class="page" id="page-lesen">
+      <p class="eyebrow">04 — Lesen</p>
+      <h1 style="font-size:24px; margin-bottom:20px;">Modellsätze</h1>
+
+      <div class="card" style="padding:0; border-left-color:var(--mod-lesen);">
+        <div class="modellsatz-row">
+          <div>
+            <div style="font-weight:500;">Modellsatz 01 · offiziell</div>
+            <div style="font-size:12px; color:var(--ink-soft);">4 Teile · 30 Items</div>
+          </div>
+          <div style="display:flex; align-items:center; gap:12px;">
+            <div class="progress-bar"><div class="progress-fill" style="width:70%;"></div></div>
+            <button class="btn btn-ghost">Öffnen</button>
+          </div>
+        </div>
+        <div class="modellsatz-row" style="border-bottom:none;">
+          <div>
+            <div style="font-weight:500;">Modellsatz 02</div>
+            <div style="font-size:12px; color:var(--ink-soft);">4 Teile · 30 Items</div>
+          </div>
+          <div style="display:flex; align-items:center; gap:12px;">
+            <div class="progress-bar"><div class="progress-fill" style="width:0%;"></div></div>
+            <button class="btn btn-ghost">Öffnen</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= HÖREN ================= -->
+    <section class="page" id="page-hoeren">
+      <p class="eyebrow">05 — Hören</p>
+      <h1 style="font-size:24px; margin-bottom:20px;">Modellsätze</h1>
+
+      <div class="card" style="border-left-color:var(--mod-hoeren);">
+        <p class="eyebrow" style="margin-bottom:10px;">Teil 1 · Podcast</p>
+        <div style="display:flex; align-items:center; gap:12px; background:var(--navy-soft); padding:10px 14px; border-radius:6px;">
+          <button class="btn btn-primary" style="padding:8px 14px;">▶</button>
+          <div style="flex:1; height:4px; background:var(--line-strong); border-radius:2px;"></div>
+          <span style="font-family:'IBM Plex Mono', monospace; font-size:12px;">02:14 / 06:40</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= SCHREIBEN ================= -->
+    <section class="page" id="page-schreiben">
+      <p class="eyebrow">06 — Schreiben · Teil 1</p>
+      <h1 style="font-size:24px; margin-bottom:16px;">Diskussionsbeitrag</h1>
+
+      <div class="card" style="margin-bottom:18px; border-left-color:var(--mod-schreiben);">
+        <p style="font-size:14px; line-height:1.7; margin:0;">
+          Thema: <strong>Homeoffice – Zukunft der Arbeit?</strong><br>
+          Erklären Sie, welche Vor- und Nachteile Homeoffice hat. Argumentieren Sie anhand eines Beispiels.
+          Nennen Sie Gegenargumente. Machen Sie einen Vorschlag für eine Zwischenlösung.
+        </p>
+      </div>
+
+      <textarea class="essay" placeholder="Schreiben Sie hier Ihren Text (ca. 230 Wörter) …"></textarea>
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-top:10px;">
+        <span style="font-size:12px; color:var(--ink-soft);">0 / 230 Wörter</span>
+        <button class="btn btn-primary">Von KI bewerten lassen</button>
+      </div>
+
+      <hr style="border:none; border-top:1px solid var(--line); margin:30px 0;" />
+
+      <p class="eyebrow" style="margin-bottom:14px;">Bewertung (Beispielergebnis)</p>
+      <div class="card">
+        <div class="rubric-row">
+          <span>Aufgabenerfüllung</span>
+          <div class="rubric-track"><div class="rubric-fill" style="width:85%;"></div></div>
+          <span class="rubric-score">B</span>
+        </div>
+        <div class="rubric-row">
+          <span>Kohärenz</span>
+          <div class="rubric-track"><div class="rubric-fill" style="width:70%;"></div></div>
+          <span class="rubric-score">B</span>
+        </div>
+        <div class="rubric-row">
+          <span>Wortschatz</span>
+          <div class="rubric-track"><div class="rubric-fill" style="width:55%;"></div></div>
+          <span class="rubric-score">C</span>
+        </div>
+        <div class="rubric-row">
+          <span>Strukturen</span>
+          <div class="rubric-track"><div class="rubric-fill" style="width:60%;"></div></div>
+          <span class="rubric-score">C</span>
+        </div>
+        <div class="rubric-row" style="border-bottom:none;">
+          <span>Register</span>
+          <div class="rubric-track"><div class="rubric-fill" style="width:90%;"></div></div>
+          <span class="rubric-score">A</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= FEHLERTAGEBUCH ================= -->
+    <section class="page" id="page-fehler">
+      <p class="eyebrow">07 — Fehlertagebuch</p>
+      <h1 style="font-size:24px; margin-bottom:20px;">Gesammelte Fehler</h1>
+
+      <div class="card" style="border-left-color:var(--mod-fehler);">
+        <div class="fehler-row">
+          <div style="flex:1;">
+            <span class="fehler-x">Ich bin glücklich, weil ich Erfolg hatte.</span> →
+            <span class="fehler-ok">Ich bin glücklich aufgrund meines Erfolgs.</span>
+            <div style="font-size:12px; color:var(--ink-soft); margin-top:4px;">Nominalisierung · aus Schreiben, 12.08.</div>
+          </div>
+          <button class="btn btn-ghost" style="align-self:flex-start;">Zur Karte</button>
+        </div>
+        <div class="fehler-row" style="border-bottom:none;">
+          <div style="flex:1;">
+            <span class="fehler-x">Wenn ich Zeit habe, würde ich kommen.</span> →
+            <span class="fehler-ok">Wenn ich Zeit hätte, würde ich kommen.</span>
+            <div style="font-size:12px; color:var(--ink-soft); margin-top:4px;">Konjunktiv II · aus Schreiben, 10.08.</div>
+          </div>
+          <button class="btn btn-ghost" style="align-self:flex-start;">Zur Karte</button>
+        </div>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<script>
+  // =====================================================================
+  // AUTH — Google Sign-In (Identity Services), gate app, sync helper
+  // =====================================================================
+
+  var GOOGLE_CLIENT_ID = "489249673296-0dcroh7l6ou15s64j863shb6dr78ce9c.apps.googleusercontent.com";
+
+  // Nach dem Deploy des Apps Script (Web app) hier die .../exec-URL eintragen.
+  // Solange dies leer ist, funktioniert die App weiter lokal (localStorage),
+  // syncToSheet() wird dann einfach übersprungen.
+  var SHEET_API_URL = "https://script.google.com/macros/s/AKfycbwI-kKOagunVO4KJ2lySkbzohYsYpZ3nqT0KDfz1aT3BMthkLhiO2L5Yw43DHrlvJ6o/exec";
+
+  var currentUser = null; // { name, email, picture }
+  var currentIdToken = null; // rohes JWT, wird an Apps Script zur Verifizierung geschickt
+
+  function decodeJwt(token) {
+    try {
+      var base64 = token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/');
+      var json = decodeURIComponent(
+        atob(base64).split('').map(function (c) {
+          return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+        }).join('')
+      );
+      return JSON.parse(json);
+    } catch (e) { return null; }
+  }
+
+  function handleCredentialResponse(response) {
+    var payload = decodeJwt(response.credential);
+    if (!payload) return;
+    currentIdToken = response.credential;
+    currentUser = { name: payload.name, email: payload.email, picture: payload.picture };
+    try {
+      localStorage.setItem('c1_user', JSON.stringify(currentUser));
+      localStorage.setItem('c1_id_token', currentIdToken);
+    } catch (e) {}
+    showApp();
+  }
+
+  function showApp() {
+    document.getElementById('login-gate').style.display = 'none';
+    var badge = document.getElementById('user-badge');
+    badge.style.display = 'flex';
+    badge.innerHTML =
+      '<img src="' + currentUser.picture + '" alt="" />' +
+      '<span>' + currentUser.name.split(' ')[0] + '</span>';
+    badge.onclick = function () {
+      if (confirm('Abmelden?')) {
+        try {
+          localStorage.removeItem('c1_user');
+          localStorage.removeItem('c1_id_token');
+        } catch (e) {}
+        location.reload();
+      }
+    };
+  }
+
+  function initGoogleSignIn() {
+    if (!window.google || !google.accounts) { setTimeout(initGoogleSignIn, 200); return; }
+    google.accounts.id.initialize({
+      client_id: GOOGLE_CLIENT_ID,
+      callback: handleCredentialResponse
+    });
+    google.accounts.id.renderButton(
+      document.getElementById('gsi-button-slot'),
+      { theme: 'outline', size: 'large', shape: 'pill', text: 'signin_with' }
+    );
+  }
+
+  // Beim Laden: falls bereits angemeldet (localStorage), Login-Gate überspringen.
+  // Der id_token kann inzwischen abgelaufen sein — Aufrufe an Apps Script
+  // schlagen dann mit "unauthorized" fehl, und der Nutzer muss sich neu anmelden.
+  (function () {
+    try {
+      var savedUser = localStorage.getItem('c1_user');
+      var savedToken = localStorage.getItem('c1_id_token');
+      if (savedUser && savedToken) {
+        currentUser = JSON.parse(savedUser);
+        currentIdToken = savedToken;
+        showApp();
+      } else {
+        initGoogleSignIn();
+      }
+    } catch (e) {
+      initGoogleSignIn();
+    }
+  })();
+
+  // Generischer Helfer, um Ergebnisse an das Apps-Script-Backend zu schicken.
+  // Läuft "fire and forget" — schlägt der Sync fehl, bleibt die App trotzdem
+  // benutzbar, weil Wortschatz/Grammatik ohnehin lokal weiterlaufen.
+  function syncToSheet(action, data) {
+    if (!SHEET_API_URL || !currentIdToken) return;
+    fetch(SHEET_API_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain' }, // vermeidet CORS-Preflight bei Apps Script
+      body: JSON.stringify({ action: action, token: currentIdToken, data: data })
+    }).catch(function () { /* still fine, local state already saved */ });
+  }
+
+  document.querySelectorAll('.navitem').forEach(function (item) {
+    item.addEventListener('click', function () {
+      document.querySelectorAll('.navitem').forEach(function (n) { n.classList.remove('active'); });
+      document.querySelectorAll('.page').forEach(function (p) { p.classList.remove('active'); });
+      item.classList.add('active');
+      document.getElementById('page-' + item.dataset.page).classList.add('active');
+    });
+  });
+
+  // =====================================================================
+  // GRAMMATIK — Themen-Uebersicht + Uebungs-Engine (Daten aus 8 Quell-Dateien
+  // extrahiert: Fragen/Aufworten via Node vm.js, Beispielsaetze per Regex).
+  // Fortschritt wird in localStorage gespeichert (Schluessel: c1-gr-<topicId>).
+  // =====================================================================
+
+  var GRAMMATIK_DATA = {"topics":[{"id":"subjektive-modalverben","title":"Subjektive Modalverben","tag":"Modalverben","desc":"müssen, sollen, dürfte, wollen — Vermutung, Gerücht, Einschätzung","levels":{"1":[{"type":"mc","prompt":"Er hat heute wieder nicht gegessen. Er <em>muss</em> großen Hunger haben.","question":"Welche Funktion hat „muss\" in diesem Satz?","options":["Pflicht / Notwendigkeit (objektiv)","Logische Schlussfolgerung (subjektiv)","Erlaubnis","Verbot"],"answer":1},{"type":"mc","prompt":"Das neue Café <em>soll</em> sehr gute Kuchen haben.","question":"Was bedeutet „soll\" hier?","options":["Auftrag / Befehl","Jemand anderes behauptet es (Gerücht)","Eigene Einschätzung","Pflicht"],"answer":1},{"type":"mc","prompt":"Das <em>kann</em> nicht wahr sein — ich habe ihn selbst gesehen.","question":"Welche Bedeutung hat „kann\" hier?","options":["Fähigkeit","Erlaubnis","Unmöglichkeit (subjektiv)","Vermutung"],"answer":2},{"type":"mc","prompt":"Der neue Minister <em>will</em> das Problem schon seit Jahren kennen.","question":"Was drückt „will\" in diesem Kontext aus?","options":["Wunsch","Der Minister behauptet das von sich selbst","Andere berichten darüber","Pflicht"],"answer":1},{"type":"mc","prompt":"Mit dieser Vorbereitung <em>dürfte</em> die Prüfung kein Problem sein.","question":"Was bedeutet „dürfte\" hier?","options":["Erlaubnis (objektiv)","Wahrscheinlichkeit / begründete Annahme","Verbot","Schwache Spekulation"],"answer":1},{"type":"mc","prompt":"Sie hat das Licht angelassen und die Tür ist offen. Sie <em>muss</em> noch da sein.","question":"Warum wird „muss\" verwendet?","options":["Sie muss bleiben (Pflicht)","Der Sprecher schlussfolgert logisch","Jemand anderes sagt das","Es ist eine schwache Vermutung"],"answer":1},{"type":"mc","prompt":"Er <em>könnte</em> morgen kommen, aber ich bin nicht sicher.","question":"Welche Bedeutung hat „könnte\" hier?","options":["Erlaubnis","Sichere Vorhersage","Schwache / unsichere Vermutung","Pflicht"],"answer":2},{"type":"mc","prompt":"Der Zeuge <em>soll</em> den Unfall gesehen haben, aber die Polizei zweifelt daran.","question":"Was drückt „soll … haben\" aus?","options":["Der Zeuge hatte Pflicht dazu","Vorwurf aus der Vergangenheit","Behauptung anderer über die Vergangenheit","Eigene Behauptung"],"answer":2},{"type":"mc","prompt":"Die Preise <em>dürften</em> nächstes Jahr weiter steigen.","question":"Was bedeutet das?","options":["Es ist erlaubt, dass die Preise steigen","Es wird wahrscheinlich passieren (begründete Prognose)","Es muss passieren","Jemand sagt, es wird passieren"],"answer":1},{"type":"mc","prompt":"Er <em>will</em> als Erster am Unfallort gewesen sein.","question":"Was impliziert der Sprecher mit dieser Formulierung?","options":["Er ist sicher als Erster dort gewesen","Er wollte als Erster dort sein","Er behauptet es selbst — der Sprecher zweifelt","Jemand anderes sagt das über ihn"],"answer":2},{"type":"mc","prompt":"Schau, wie dünn sie geworden ist! Sie <em>kann</em> kaum etwas gegessen haben.","question":"Was bedeutet „kann … haben\" hier?","options":["Sie hatte die Fähigkeit zu essen","Der Sprecher hält es für fast unmöglich","Sie hatte Erlaubnis zu essen","Jemand behauptet das"],"answer":1},{"type":"mc","prompt":"Der Politiker <em>soll</em> in den Skandal verwickelt sein.","question":"Wer behauptet das?","options":["Der Sprecher selbst (sichere Info)","Der Politiker selbst","Dritte Personen / Berichte","Niemand — es ist eine Frage"],"answer":2},{"type":"mc","prompt":"Das Ergebnis <em>müsste</em> eigentlich besser sein — die Bedingungen waren ideal.","question":"Was drückt „müsste\" (Konjunktiv II) aus?","options":["Logische Schlussfolgerung (fast sicher)","Erwartung, die nicht erfüllt wurde","Gerücht","Erlaubnis"],"answer":1}],"2":[{"type":"mc","prompt":"Das Licht ist an und Musik spielt. — Jemand ___ zu Hause sein.","question":"Welches Modalverb passt für eine logische Schlussfolgerung (~95% sicher)?","options":["könnte","soll","muss","will"],"answer":2},{"type":"mc","prompt":"In der Zeitung steht, der CEO habe Millionen unterschlagen.","question":"Wie formuliert man das mit subjektivem Modalverb?","options":["Der CEO muss Millionen unterschlagen haben.","Der CEO soll Millionen unterschlagen haben.","Der CEO kann Millionen unterschlagen haben.","Der CEO will Millionen unterschlagen haben."],"answer":1},{"type":"mc","prompt":"Ich sehe dunkle Wolken. Vielleicht regnet es — ich bin aber nicht sicher.","question":"Welche Formulierung passt am besten (schwache Vermutung)?","options":["Es muss regnen.","Es soll regnen.","Es könnte regnen.","Es will regnen."],"answer":2},{"type":"mc","prompt":"Er behauptet selbst, er sei zur Tatzeit in Paris gewesen.","question":"Wie formuliert man das mit subjektivem Modalverb?","options":["Er soll zur Tatzeit in Paris gewesen sein.","Er will zur Tatzeit in Paris gewesen sein.","Er muss zur Tatzeit in Paris gewesen sein.","Er dürfte zur Tatzeit in Paris gewesen sein."],"answer":1},{"type":"mc","prompt":"Die Expertin hat gründlich geforscht — ich rechne damit, dass ihre Schlussfolgerung richtig ist.","question":"Welches Wort drückt diese wahrscheinliche, begründete Annahme am besten aus?","options":["muss","dürfte","soll","will"],"answer":1},{"type":"mc","prompt":"Das ist unmöglich! Niemand kann das in zwei Stunden geschafft haben!","question":"Welche Konstruktion drückt diese Einschätzung grammatisch korrekt aus?","options":["Das muss jemand in zwei Stunden geschafft haben.","Das kann niemand in zwei Stunden geschafft haben.","Das soll niemand in zwei Stunden geschafft haben.","Das will niemand in zwei Stunden geschafft haben."],"answer":1},{"type":"mc","prompt":"Laut Gerüchten war das Unternehmen kurz vor dem Bankrott.","question":"Wie gibt man diese Information mit Distanz wieder?","options":["Das Unternehmen muss kurz vor dem Bankrott gewesen sein.","Das Unternehmen soll kurz vor dem Bankrott gewesen sein.","Das Unternehmen könnte kurz vor dem Bankrott gewesen sein.","Das Unternehmen will kurz vor dem Bankrott gewesen sein."],"answer":1},{"type":"mc","prompt":"Aufgrund der wirtschaftlichen Lage erwarten Analysten höhere Zinsen.","question":"Welches Modalverb nutzen Analysten für begründete Prognosen?","options":["sollen","müssen","dürften","wollen"],"answer":2},{"type":"mc","prompt":"Er sieht so erschöpft aus — bestimmt hat er kaum geschlafen.","question":"Welche Konstruktion passt?","options":["Er soll kaum geschlafen haben.","Er will kaum geschlafen haben.","Er muss kaum geschlafen haben.","Er könnte kaum geschlafen haben."],"answer":2},{"type":"mc","prompt":"Ich habe gelesen, dass das neue Medikament Nebenwirkungen hat.","question":"Wie gibt man diese Aussage mit „sollen\" wieder?","options":["Das Medikament muss Nebenwirkungen haben.","Das Medikament soll Nebenwirkungen haben.","Das Medikament kann Nebenwirkungen haben.","Das Medikament will Nebenwirkungen haben."],"answer":1},{"type":"mc","prompt":"Es ist denkbar, aber nicht sicher, dass er das getan hat.","question":"Welches Modalverb drückt das aus?","options":["muss","soll","könnte","dürfte"],"answer":2},{"type":"mc","prompt":"Sie behauptet, den Fehler nicht gemacht zu haben.","question":"Wie drückt man das mit subjektivem Modalverb aus?","options":["Sie soll den Fehler nicht gemacht haben.","Sie will den Fehler nicht gemacht haben.","Sie muss den Fehler nicht gemacht haben.","Sie dürfte den Fehler nicht gemacht haben."],"answer":1},{"type":"mc","prompt":"Das Projekt hat sehr gut funktioniert — die Planung war offensichtlich exzellent.","question":"Wie schlussfolgert man das?","options":["Die Planung kann exzellent gewesen sein.","Die Planung soll exzellent gewesen sein.","Die Planung muss exzellent gewesen sein.","Die Planung will exzellent gewesen sein."],"answer":2}],"3":[{"type":"fill","prompt":"Das Licht ist noch an — sie ___ noch im Büro sein.","answer":"muss","hint":"Logische Schlussfolgerung (~95% sicher)"},{"type":"fill","prompt":"Laut Medienberichten ___ der Minister zurückgetreten sein.","answer":"soll","hint":"Gerücht / externe Quelle"},{"type":"fill","prompt":"Mit dieser Erfahrung ___ er die Stelle bekommen.","answer":"dürfte","hint":"Begründete Annahme (wahrscheinlich)"},{"type":"fill","prompt":"Das ___ ein Irrtum sein — ich habe alles zweimal überprüft.","answer":"kann","hint":"Unmöglichkeit / fast ausgeschlossen"},{"type":"fill","prompt":"Er ___ das Paket bereits erhalten haben — die Tracking-App zeigt „zugestellt\".","answer":"muss","hint":"Logische Schlussfolgerung in der Vergangenheit"},{"type":"fill","prompt":"Der Zeuge ___ den Täter gesehen haben, aber seine Aussage ist widersprüchlich.","answer":"soll","hint":"Behauptung anderer über ihn"},{"type":"fill","prompt":"Es ist spät. Sie ___ schon schlafen — ruf morgen an.","answer":"könnte","hint":"Schwache, unsichere Vermutung"},{"type":"fill","prompt":"Der Verdächtige ___ in der Tatnacht zu Hause gewesen sein — er hat kein Alibi.","answer":"könnte","hint":"Möglichkeit, nicht sicher"},{"type":"fill","prompt":"Sie ___ das nie gesagt haben! Das ist nicht ihre Art.","answer":"kann","hint":"Verneinung: Das ist fast unmöglich"},{"type":"fill","prompt":"Er behauptet, das Rezept selbst erfunden zu haben — er ___ das Rezept erfunden haben.","answer":"will","hint":"Eigene (zweifelhafte) Behauptung"},{"type":"fill","prompt":"Die Situation ___ sich bis Ende des Jahres entspannt haben.","answer":"dürfte","hint":"Begründete Prognose / wahrscheinlich"},{"type":"fill","prompt":"Gerüchten zufolge ___ das Unternehmen einen neuen CEO eingestellt haben.","answer":"soll","hint":"Externe Quelle / Gerücht"},{"type":"fill","prompt":"Das Ergebnis ist perfekt — er ___ tagelang geübt haben.","answer":"muss","hint":"Logische Schlussfolgerung aus dem Ergebnis"}],"4":[{"type":"mc","prompt":"Das Fenster ist offen und es sind Spuren zu sehen.","question":"Wie formuliert man die logische Schlussfolgerung in der Vergangenheit?","options":["Jemand muss eingebrochen sein.","Jemand musste einbrechen.","Jemand soll eingebrochen sein.","Jemand muss einbrechen."],"answer":0},{"type":"mc","prompt":"Berichten zufolge hat die Firma Daten weitergegeben.","question":"Wie formuliert man das mit subjektivem Modalverb?","options":["Die Firma muss Daten weitergegeben haben.","Die Firma soll Daten weitergegeben haben.","Die Firma will Daten weitergegeben haben.","Die Firma könnte Daten weitergegeben haben."],"answer":1},{"type":"mc","prompt":"Die Veranstaltung war ausverkauft — die Organisation war sehr gut.","question":"Schlussfolgerung über die Vergangenheit?","options":["Die Planung muss hervorragend gewesen sein.","Die Planung soll hervorragend gewesen sein.","Die Planung musste hervorragend sein.","Die Planung hat hervorragend sein müssen."],"answer":0},{"type":"mc","prompt":"Er sagt, er habe das Dokument nie erhalten.","question":"Wie formuliert man das mit „wollen\"?","options":["Er soll das Dokument nie erhalten haben.","Er will das Dokument nie erhalten haben.","Er muss das Dokument nie erhalten haben.","Er könnte das Dokument nie erhalten haben."],"answer":1},{"type":"mc","prompt":"Wahrscheinlich wurde der Fehler schon korrigiert.","question":"Welche Formulierung mit Passiv + Modalverb passt?","options":["Der Fehler muss korrigiert worden sein.","Der Fehler soll korrigiert worden sein.","Der Fehler dürfte korrigiert worden sein.","Der Fehler kann korrigiert worden sein."],"answer":2},{"type":"fill","prompt":"Das Ergebnis ist falsch. — Jemand ___ einen Fehler gemacht haben.","answer":"muss","hint":"Logische Schlussfolgerung aus dem Ergebnis"},{"type":"fill","prompt":"Laut Zeugen ___ der Angeklagte am Tatort gesehen worden sein.","answer":"soll","hint":"Aussage von Dritten (Zeugen)"},{"type":"fill","prompt":"Es ist möglich, aber nicht sicher, dass er die E-Mail gelesen hat. — Er ___ die E-Mail gelesen haben.","answer":"könnte","hint":"Schwache Möglichkeit in der Vergangenheit"},{"type":"fill","prompt":"Sie behauptet, das Gespräch nicht gehört zu haben. — Sie ___ das Gespräch nicht gehört haben.","answer":"will","hint":"Eigene Behauptung — der Sprecher bezweifelt es"},{"type":"fill","prompt":"Aufgrund der Beweise ___ die Entscheidung intern getroffen worden sein.","answer":"dürfte","hint":"Begründete Vermutung + Passiv Vergangenheit"},{"type":"fill","prompt":"Die Brücke ist eingestürzt — die Konstruktion ___ fehlerhaft gewesen sein.","answer":"muss","hint":"Logische Schlussfolgerung aus dem Unfall"},{"type":"fill","prompt":"Medienberichten zufolge ___ das Gebäude in den 1960er Jahren gebaut worden sein.","answer":"soll","hint":"Externe Quelle + Passiv Vergangenheit"},{"type":"fill","prompt":"Niemand ___ das gewusst haben — es war streng geheim.","answer":"kann","hint":"Unmöglichkeit: fast ausgeschlossen"}],"5":[{"type":"mc","prompt":"Im Bericht steht: „Die Unterlagen wurden möglicherweise manipuliert.\"","question":"Formuliere das mit subjektivem Modalverb + Passiv:","options":["Die Unterlagen sollen manipuliert werden.","Die Unterlagen dürften manipuliert worden sein.","Die Unterlagen müssen manipuliert worden sein.","Die Unterlagen wollen manipuliert worden sein."],"answer":1},{"type":"mc","prompt":"Laut Gerüchten wurde der Vertrag bereits unterzeichnet.","question":"Wie formuliert man das mit „sollen + Passiv\"?","options":["Der Vertrag soll bereits unterzeichnet sein.","Der Vertrag soll bereits unterzeichnet worden sein.","Der Vertrag muss bereits unterzeichnet worden sein.","Der Vertrag dürfte bereits unterzeichnet sein."],"answer":1},{"type":"mc","prompt":"Die Prüfungsergebnisse zeigen deutlich, dass schlecht gelernt wurde.","question":"Schlussfolgerung mit Passiv:","options":["Es dürfte schlecht gelernt worden sein.","Es soll schlecht gelernt worden sein.","Es muss schlecht gelernt worden sein.","Es könnte schlecht gelernt worden sein."],"answer":2},{"type":"fill","prompt":"Die Produkte ___ in Asien hergestellt worden sein — die Qualitätsprobleme deuten darauf hin.","answer":"dürften","hint":"Begründete Vermutung + Passiv Vergangenheit (Plural)"},{"type":"fill","prompt":"Laut Presseberichten ___ die Fusionsgespräche abgebrochen worden sein.","answer":"sollen","hint":"Externe Quelle + Passiv Vergangenheit"},{"type":"mc","prompt":"Welche Variante entspricht C1-Schreibstil für: „Vielleicht werden die Maßnahmen verlängert.\"?","options":["Die Maßnahmen müssen verlängert werden.","Die Maßnahmen sollen verlängert werden.","Die Maßnahmen dürften verlängert werden.","Die Maßnahmen können verlängert werden."],"answer":2},{"type":"mc","prompt":"In wissenschaftlichen Texten ersetzt man oft „wahrscheinlich wurde X beeinflusst\" durch:","options":["X muss beeinflusst worden sein.","X soll beeinflusst worden sein.","X dürfte beeinflusst worden sein.","X will beeinflusst worden sein."],"answer":2},{"type":"fill","prompt":"Das Gebäude ___ in den nächsten Jahren renoviert werden — der Zustand ist kritisch.","answer":"muss","hint":"Logische Notwendigkeit (objektiv-subjektiv)"},{"type":"fill","prompt":"Der Zeuge ___ vom Täter bedroht worden sein — er wollte nicht aussagen.","answer":"soll","hint":"Behauptung Dritter + Passiv Vergangenheit"},{"type":"mc","prompt":"Welcher Satz klingt am natürlichsten in einem Nachrichtenartikel?","options":["Der Chef will entlassen worden sein.","Der Chef muss entlassen worden sein.","Der Chef soll entlassen worden sein.","Der Chef könnte entlassen worden sein."],"answer":2},{"type":"fill","prompt":"Das Projekt ___ ursprünglich anders geplant worden sein — das erklärt die vielen Änderungen.","answer":"dürfte","hint":"Begründete Vermutung aus dem Kontext"},{"type":"mc","prompt":"Welche Konstruktion ist grammatisch falsch?","options":["Es muss ein Fehler gewesen sein.","Es dürfte erkannt worden sein.","Es soll entschieden werden worden sein.","Es könnte passiert sein."],"answer":2},{"type":"fill","prompt":"Niemand ___ über die internen Vorgänge informiert worden sein — alles war geheim.","answer":"soll","hint":"Behauptung / Angabe von Quellen + Passiv"}]},"examples":[]},{"id":"modales-partizip","title":"Modales Partizip","tag":"Partizip","desc":"zu + Partizip I — das zu lösende Problem, die einzureichenden Unterlagen","levels":{"1":[{"type":"mc","prompt":"Die zu lösenden Aufgaben sind komplex.","task":"Was bedeutet das modale Partizip?","options":["die Aufgaben, die gerade gelöst werden","die Aufgaben, die gelöst werden müssen","die Aufgaben, die bereits gelöst wurden","die Aufgaben, die jemand lösen wollte"],"answer":1},{"type":"mc","prompt":"Das ist ein nicht zu unterschätzender Fehler.","task":"Paraphrasiere das modale Partizip:","options":["ein Fehler, der nicht unterschätzt wurde","ein Fehler, der nicht unterschätzt werden darf","ein Fehler, der unterschätzt werden kann","ein Fehler, der nicht beachtet werden sollte"],"answer":1},{"type":"mc","prompt":"Die einzureichenden Unterlagen müssen bis Freitag vorliegen.","task":"Langform des modalen Partizips?","options":["die Unterlagen, die eingereicht werden können","die Unterlagen, die eingereicht werden müssen","die Unterlagen, die einzureichen versucht wurden","die Unterlagen, die noch nicht eingereicht sind"],"answer":1},{"type":"mc","prompt":"Der zu erwartende Anstieg der Kosten beunruhigt die Investoren.","task":"Relativsatz-Paraphrase?","options":["der Anstieg, der bereits erwartet wurde","der Anstieg, der erwartet werden kann","der Anstieg, der nicht erwartet wird","der Anstieg, der erwartet werden sollte"],"answer":1},{"type":"mc","prompt":"die sofort durchzuführenden Maßnahmen","task":"Welches Verb liegt zugrunde?","options":["führen","durchführen","einführen","zuführen"],"answer":1},{"type":"mc","prompt":"Welcher Satz enthält ein modales Partizip?","task":"","options":["Die arbeitenden Menschen sind müde.","Das gelöste Problem ist bekannt.","Das zu lösende Problem ist bekannt.","Das Problem, das gelöst ist, ist bekannt."],"answer":2},{"type":"mc","prompt":"die vorzulegenden Beweise","task":"Was bedeutet „vorzulegend\"? Es kommt von:","options":["verlegen","vorlegen","auflegen","belegen"],"answer":1},{"type":"mc","prompt":"Das noch zu klärende Detail verzögert die Entscheidung.","task":"Was bedeutet „noch\" hier?","options":["Das Detail wurde noch nicht geklärt.","Das Detail ist noch sehr unklar.","Das Detail kann noch geklärt werden.","Das Detail ist bereits geklärt."],"answer":0},{"type":"mc","prompt":"Welche Konstruktion ist grammatisch FALSCH?","task":"","options":["das zu lösende Problem","die einzureichenden Unterlagen","ein nicht zu übersehendes Detail","das zu gelöstes Problem"],"answer":3},{"type":"mc","prompt":"In welchem Register wird das modale Partizip typischerweise verwendet?","task":"","options":["Im informellen Alltagsgespräch","In SMS und sozialen Medien","In formellen und akademischen Texten","In der gesprochenen Umgangssprache"],"answer":2},{"type":"mc","prompt":"Das nicht zu ignorierende Risiko wurde unterschätzt.","task":"Was drückt „nicht zu ignorierend\" aus?","options":["Das Risiko kann ignoriert werden.","Das Risiko wurde nicht ignoriert.","Das Risiko darf nicht ignoriert werden.","Das Risiko soll nicht ignoriert werden."],"answer":2},{"type":"mc","prompt":"Bei trennbaren Verben steht „zu\" …","task":"Welche Regel gilt?","options":["immer vor dem gesamten Verb","nach dem Partizip-Suffix","zwischen Verbpräfix und Verbstamm","am Satzende"],"answer":2},{"type":"mc","prompt":"die dringend einzuleitenden Reformen","task":"Vollständige Paraphrase?","options":["die Reformen, die dringend eingeleitet worden sind","die Reformen, die dringend eingeleitet werden müssen","die Reformen, die dringend eingeleitet werden wollten","die Reformen, die dringend eingeleitet wurden"],"answer":1}],"2":[{"type":"fill","prompt":"das Problem, das diskutiert werden muss","task":"Bilde das modale Partizip (Neutr. Nom.):","answer":"das zu diskutierende Problem","hint":"diskutieren → zu diskutierend → -e (Neutr. Nom.)"},{"type":"fill","prompt":"die Regeln, die beachtet werden müssen","task":"Bilde das modale Partizip (Plural):","answer":"die zu beachtenden Regeln","hint":"beachten → zu beachtend → -en (Plural)"},{"type":"fill","prompt":"ein Fehler, der nicht unterschätzt werden darf","task":"Bilde das modale Partizip mit Negation:","answer":"ein nicht zu unterschätzender Fehler","hint":"nicht + zu + unterschätz- + -end + -er (Mask. Nom.)"},{"type":"fill","prompt":"die Unterlagen, die vorgelegt werden müssen","task":"Bilde das modale Partizip (trennbares Verb!):","answer":"die vorzulegenden Unterlagen","hint":"vorlegen → vor·zu·legend → -en (Plural)"},{"type":"fill","prompt":"das Projekt, das durchgeführt werden muss","task":"Bilde das modale Partizip:","answer":"das durchzuführende Projekt","hint":"durchführen → durch·zu·führend → -e (Neutr. Nom.)"},{"type":"fill","prompt":"Faktoren, die berücksichtigt werden müssen (kein Artikel, Plural)","task":"Bilde das modale Partizip:","answer":"zu berücksichtigende Faktoren","hint":"Kein Artikel → starke Endung: -e (Pl. Nom./Akk.)"},{"type":"fill","prompt":"ein Thema, das gesellschaftlich diskutiert werden muss","task":"Bilde das erweiterte modale Partizip:","answer":"ein gesellschaftlich zu diskutierendes Thema","hint":"Adverb vor zu + Partizip: gesellschaftlich zu diskutierend + -es (Neutr.)"},{"type":"fill","prompt":"Maßnahmen, die sofort eingeleitet werden müssen","task":"Bilde das erweiterte modale Partizip (Plural):","answer":"die sofort einzuleitenden Maßnahmen","hint":"sofort + einleiten (trennbar: ein·zu·leitend) → -en"},{"type":"fill","prompt":"die Fragen, die noch geklärt werden müssen","task":"Bilde das modale Partizip mit Erweiterung:","answer":"die noch zu klärenden Fragen","hint":"noch + zu klärend → -en (Plural)"},{"type":"fill","prompt":"der Rückgang, der erwartet werden kann","task":"Bilde das modale Partizip (Mask. Nom.):","answer":"der zu erwartende Rückgang","hint":"erwarten → zu erwartend → -e (Mask. Nom.)"},{"type":"fill","prompt":"ein Risiko, das nicht ignoriert werden darf","task":"Bilde das modale Partizip mit Negation:","answer":"ein nicht zu ignorierendes Risiko","hint":"nicht + zu ignorierend + -es (Neutr. Nom.)"},{"type":"fill","prompt":"die Aufgaben, die noch bewältigt werden müssen","task":"Bilde das modale Partizip mit Erweiterung:","answer":"die noch zu bewältigenden Aufgaben","hint":"noch + zu bewältigend → -en (Plural)"},{"type":"fill","prompt":"ein Aspekt, der kritisch hinterfragt werden muss","task":"Bilde das erweiterte modale Partizip:","answer":"ein kritisch zu hinterfragender Aspekt","hint":"kritisch + zu hinterfragend + -er (Mask. Nom.)"}],"3":[{"type":"mc","prompt":"das zu lösende Problem","task":"Relativsatz-Paraphrase?","options":["das Problem, das gelöst wird","das Problem, das gelöst werden muss","das Problem, das gelöst wurde","das Problem, das gelöst werden soll"],"answer":1},{"type":"mc","prompt":"die Unterlagen, die bis Montag eingereicht werden müssen","task":"Welche Version mit modalem Partizip ist korrekt?","options":["die bis Montag einzureichenden Unterlagen","die bis Montag zu einreichenden Unterlagen","die bis Montag einreichenden Unterlagen","die zu bis Montag einreichenden Unterlagen"],"answer":0},{"type":"mc","prompt":"die sofort einzuleitenden Maßnahmen","task":"Welche Relativsatz-Version ist korrekt?","options":["die Maßnahmen, die sofort eingeleitet werden können","die Maßnahmen, die sofort eingeleitet werden müssen","die Maßnahmen, die sofort eingeleitet wurden","die Maßnahmen, die sofort einzuleiten sind"],"answer":1},{"type":"mc","prompt":"Faktoren, die in der Analyse berücksichtigt werden sollten","task":"Welche Version mit modalem Partizip ist korrekt?","options":["zu berücksichtigende Faktoren in der Analyse","in der Analyse zu berücksichtigende Faktoren","Faktoren in der Analyse zu berücksichtigend","berücksichtigende Faktoren in der Analyse"],"answer":1},{"type":"mc","prompt":"Welchen Satz kann man NICHT durch ein modales Partizip ersetzen?","task":"","options":["das Buch, das gelesen werden muss","der Plan, der umgesetzt werden soll","der Mann, der jeden Tag joggt","die Aufgabe, die erledigt werden muss"],"answer":2},{"type":"mc","prompt":"ein nicht zu unterschätzender Faktor","task":"Welche Relativsatz-Version passt?","options":["ein Faktor, der nicht unterschätzt wurde","ein Faktor, der nicht unterschätzt werden darf","ein Faktor, der unterschätzt werden kann","ein Faktor, der nicht bewertet werden soll"],"answer":1},{"type":"mc","prompt":"das Problem, das dringend gelöst werden muss","task":"Welche Version ist korrekt?","options":["das dringend gelöste Problem","das dringend lösende Problem","das dringend zu lösende Problem","das zu dringend lösende Problem"],"answer":2},{"type":"mc","prompt":"die noch zu klärenden Fragen","task":"Welche Paraphrase ist vollständig korrekt?","options":["die Fragen, die noch unklar sind","die Fragen, die noch geklärt werden müssen","die Fragen, die noch nicht beantwortet wurden","die Fragen, die noch gestellt werden müssen"],"answer":1},{"type":"mc","prompt":"der zu erwartende Rückgang","task":"Was bedeutet das?","options":["der Rückgang, der erwartet werden muss","der Rückgang, der erwartet werden kann / wird","der Rückgang, der schon erwartet wurde","der Rückgang, der nicht erwartet wird"],"answer":1},{"type":"mc","prompt":"Welche Version klingt am formalsten für C1-Schreiben?","task":"","options":["Wir müssen die Probleme lösen, die noch offen sind.","Die noch offenen Probleme müssen gelöst werden.","Die noch zu lösenden Probleme erfordern sofortige Maßnahmen.","Es gibt noch Probleme, die man lösen muss."],"answer":2},{"type":"mc","prompt":"die Dokumente, die vom Antragsteller vorgelegt werden müssen","task":"Korrekte Version mit modalem Partizip?","options":["die vom Antragsteller zu vorlegenden Dokumente","die vom Antragsteller vorzulegenden Dokumente","die vom Antragsteller vorlegenden Dokumente","die zu vorlegenden Dokumente vom Antragsteller"],"answer":1},{"type":"mc","prompt":"Welcher Ausdruck ist ein ERWEITERTES modales Partizipialattribut?","task":"","options":["das lösende Team","das gelöste Problem","das gesellschaftlich zu diskutierende Thema","das diskutierte Thema"],"answer":2},{"type":"mc","prompt":"die vom Ausschuss zu prüfenden Anträge","task":"Welche Paraphrase ist korrekt?","options":["die Anträge, die der Ausschuss geprüft hat","die Anträge, die vom Ausschuss geprüft werden müssen","die Anträge, die vom Ausschuss geprüft werden können","die Anträge, die der Ausschuss prüft"],"answer":1}],"4":[{"type":"fill","prompt":"Wir diskutieren ___ Problem. (lösen, Akk. Neutr.)","task":"Adjektivendung korrekt einsetzen:","answer":"das zu lösende","hint":"Akk. Neutrum nach bestimmtem Artikel → -e"},{"type":"fill","prompt":"Mit ___ Unterlagen kann der Antrag gestellt werden. (einreichen, Dat. Pl.)","task":"","answer":"den einzureichenden","hint":"Dat. Plural nach bestimmtem Artikel → -en"},{"type":"fill","prompt":"Die Kosten ___ Projekts sind gestiegen. (durchführen, Gen. Neutr.)","task":"","answer":"des durchzuführenden","hint":"Gen. Neutrum nach bestimmtem Artikel → -en"},{"type":"fill","prompt":"Es gibt ___ Faktoren. (berücksichtigen, Akk. Pl., kein Artikel)","task":"","answer":"zu berücksichtigende","hint":"Kein Artikel, Pl. Akk. → starke Endung: -e"},{"type":"fill","prompt":"___ Anstieg bereitet Sorgen. (erwarten, Nom. Mask., kein Artikel)","task":"Großschreibung beachten!","answer":"Zu erwartender","hint":"Kein Artikel, Mask. Nom. → starke Endung: -er"},{"type":"fill","prompt":"Die Analyse befasst sich mit ___ Risiken. (nicht ignorieren, Dat. Pl.)","task":"","answer":"den nicht zu ignorierenden","hint":"Dat. Pl. nach bestimmtem Artikel → -en; nicht vor zu"},{"type":"fill","prompt":"Das ist ___ Fehler. (nicht unterschätzen, Nom. Mask.)","task":"Mit unbestimmtem Artikel:","answer":"ein nicht zu unterschätzender","hint":"Indef. Artikel, Mask. Nom. → -er"},{"type":"fill","prompt":"Die Reform gibt ___ Gruppen mehr Unterstützung. (benachteiligen, Dat. Pl.)","task":"","answer":"den zu benachteiligenden","hint":"Dat. Pl. → -en; benachteiligen ist nicht trennbar"}],"5":[{"type":"mc","prompt":"Du schreibst einen C1-Kommentar über Klimaschutz. Welcher Satz klingt formeller?","task":"","options":["Die Probleme, die wir lösen müssen, sind sehr komplex.","Die zu lösenden Probleme sind von enormer Komplexität.","Es gibt Probleme, die man lösen muss.","Wir müssen die Probleme lösen."],"answer":1},{"type":"mc","prompt":"In einem Wirtschaftsbericht: Maßnahmen müssen sofort umgesetzt werden. C1-gerechte Formulierung?","task":"","options":["Die Maßnahmen, die man sofort umsetzen muss, sind bekannt.","Man muss die Maßnahmen sofort umsetzen.","Die sofort umzusetzenden Maßnahmen sind bereits beschlossen.","Es ist wichtig, die Maßnahmen sofort umzusetzen."],"answer":2},{"type":"mc","prompt":"Welcher Satz enthält einen grammatischen Fehler im modalen Partizip?","task":"","options":["die noch zu klärenden Fragen","das dringend zu lösende Problem","die zu vorlegenden Unterlagen","ein nicht zu unterschätzender Faktor"],"answer":2},{"type":"fill","prompt":"Umformung: „Es gibt Risiken, die nicht ignoriert werden dürfen.\"","task":"Formuliere mit modalem Partizip (kein Artikel, Pl.):","answer":"nicht zu ignorierende Risiken","hint":"Kein Artikel, Pl. Nom. → starke Endung: -e"},{"type":"fill","prompt":"Umformung: „Die Fragen, die im Seminar noch diskutiert werden müssen, sind zahlreich.\"","task":"Mit erweitertem modalem Partizip:","answer":"Die im Seminar noch zu diskutierenden Fragen sind zahlreich.","hint":"Erweiterung vor zu + Partizip; Pl. Nom."},{"type":"mc","prompt":"Welche Aussage über das modale Partizip ist FALSCH?","task":"","options":["Es hat immer eine passive Bedeutung.","Es kann Notwendigkeit oder Möglichkeit ausdrücken.","Bei trennbaren Verben steht „zu\" vor dem Präfix.","Es wird wie ein Adjektiv dekliniert."],"answer":2},{"type":"mc","prompt":"In welchem Text würde „die zu erwartende Rezession\" NICHT vorkommen?","task":"","options":["Ein Wirtschaftsartikel in der FAZ","Ein wissenschaftlicher Bericht über Konjunktur","Eine WhatsApp-Nachricht an einen Freund","Ein offizieller Regierungsbericht"],"answer":2},{"type":"fill","prompt":"Ergänze: Die ___ (vorlegen) Dokumente wurden vom Amt angefordert. (Pl., bestimmter Artikel)","task":"","answer":"vorzulegenden","hint":"vorlegen (trennbar) → vor·zu·legend → -en (Pl.)"},{"type":"mc","prompt":"Welche Umformung ist vollständig richtig?","task":"„die Aufgabe, die bis morgen erledigt werden muss\" →","options":["die bis morgen erledigend Aufgabe","die bis morgen zu erledigende Aufgabe","die zu bis morgen erledigende Aufgabe","die bis morgen erledigt zu werdende Aufgabe"],"answer":1},{"type":"mc","prompt":"Was macht diesen Satz C1-typisch: „Das gesellschaftlich zu diskutierende Problem der sozialen Ungleichheit erfordert politisches Engagement.\"","task":"","options":["Er ist sehr lang.","Er verwendet ein erweitertes modales Partizipialattribut.","Er verwendet viele Fremdwörter.","Er ist im Passiv formuliert."],"answer":1},{"type":"fill","prompt":"Schreibe um: „Es gibt noch viele Probleme, die dringend gelöst werden müssen.\"","task":"Mit erweitertem modalem Partizip (Pl. Akk. nach „viele\"):","answer":"Es gibt noch viele dringend zu lösende Probleme.","hint":"dringend + zu lösend + -e (Pl. Akk. ohne Artikel nach viele)"},{"type":"mc","prompt":"Welcher Satz ist sprachlich korrekt und C1-geeignet?","task":"","options":["Die zu beachtenden Regeln sind streng.","Die zu beachtet Regeln sind streng.","Die beachtend Regeln sind streng.","Die beachtende Regeln sind streng."],"answer":0},{"type":"fill","prompt":"Ergänze: Die ___ (einleiten, dringend, Pl.) Reformen stoßen auf Widerstand.","task":"Erweitertes modales Partizip:","answer":"dringend einzuleitenden","hint":"dringend + einleiten (trennbar: ein·zu·leitend) → -en (Pl.)"}]},"examples":[{"de":"Die zu bewältigenden Herausforderungen sind enorm.","vi":"Những thách thức cần vượt qua là rất lớn.","phrase":null,"note":"Notwendigkeit: Herausforderungen, die bewältigt werden müssen"},{"de":"Der zu erwartende Rückgang der Nachfrage bereitet Sorgen.","vi":"Sự sụt giảm nhu cầu được dự báo đang gây lo ngại.","phrase":null,"note":"Möglichkeit/Prognose: der Rückgang, der erwartet werden kann"},{"de":"Die zu prüfenden Unterlagen wurden eingereicht.","vi":"Các hồ sơ cần được kiểm tra đã được nộp.","phrase":null,"note":"Notwendigkeit — typisches Amtsdeutsch"},{"de":"Das ist ein nicht zu unterschätzender Faktor.","vi":"Đây là một yếu tố không thể đánh giá thấp.","phrase":null,"note":"Negation: nicht + zu + Partizip I"},{"de":"Das ist die zu beantwortende Frage. (Nom. Fem.)","vi":"Đây là câu hỏi cần được trả lời.","phrase":null,"note":null},{"de":"Wir diskutieren den zu lösenden Konflikt. (Akk. Mask.)","vi":"Chúng tôi thảo luận về cuộc xung đột cần được giải quyết.","phrase":null,"note":null},{"de":"Mit den vorzulegenden Dokumenten wird der Antrag bearbeitet. (Dat. Pl.)","vi":"Với các tài liệu cần nộp, đơn xin sẽ được xử lý.","phrase":null,"note":null},{"de":"Die Kosten des durchzuführenden Projekts sind hoch. (Gen. Neutr.)","vi":"Chi phí của dự án cần thực hiện là rất cao.","phrase":null,"note":null},{"de":"Die noch zu lösenden strukturellen Probleme erfordern langfristige Strategien.","vi":"Những vấn đề cơ cấu vẫn chưa được giải quyết đòi hỏi chiến lược dài hạn.","phrase":null,"note":null},{"de":"Das nicht zu ignorierende Risiko muss in die Planung einbezogen werden.","vi":"Rủi ro không thể bỏ qua này cần được tính vào kế hoạch.","phrase":null,"note":null},{"de":"Die dringend einzuleitenden Reformen stoßen auf politischen Widerstand.","vi":"Các cải cách cần được thực hiện khẩn cấp vấp phải sự phản đối chính trị.","phrase":null,"note":null},{"de":"Ein gesellschaftlich zu diskutierendes Thema ist die Digitalisierung des Bildungssystems.","vi":"Số hóa hệ thống giáo dục là chủ đề cần được thảo luận ở cấp độ xã hội.","phrase":null,"note":null}]},{"id":"konjunktiv2-c1","title":"Konjunktiv II · C1","tag":"Konjunktiv","desc":"Irrealis Vergangenheit, als ob / als, subjektive Modalverben K2","levels":{"1":[{"type":"mc","prompt":"Welcher Satz steht im Konjunktiv II Vergangenheit?","task":"","options":["Wenn ich Zeit hätte, würde ich helfen.","Wenn ich Zeit gehabt hätte, hätte ich geholfen.","Er tut so, als ob er krank wäre.","Das dürfte stimmen."],"answer":1},{"type":"mc","prompt":"\"Wenn er früher gekommen wäre, hätten wir das geschafft.\"","task":"Was drückt dieser Satz aus?","options":["Eine zukünftige Möglichkeit","Eine irreale Bedingung in der Vergangenheit","Eine reale vergangene Handlung","Eine Erwartung für die Gegenwart"],"answer":1},{"type":"mc","prompt":"Welche Form ist der Konjunktiv II von \"kommen\" in der Vergangenheit?","task":"","options":["käme","wäre gekommen","ist gekommen","wurde gekommen"],"answer":1},{"type":"mc","prompt":"\"Das dürfte kein Problem sein.\" — Welche Funktion hat \"dürfte\"?","task":"","options":["Erlaubnis (objektiv)","Wahrscheinlichkeit / Einschätzung (subjektiv)","Irreale Bedingung","Vergangenheitsbezug"],"answer":1},{"type":"mc","prompt":"Welcher Satz enthält einen irrealen Vergleich?","task":"","options":["Wenn er das gewusst hätte, wäre er gegangen.","Er spricht, als wäre er Experte.","Das müsste eigentlich klappen.","Hätte sie mehr gelernt, hätte sie bestanden."],"answer":1},{"type":"mc","prompt":"\"Hätte er investiert, wäre das Projekt erfolgreich gewesen.\" — Was ist ungewöhnlich an diesem Satz?","task":"","options":["Es steht kein Subjekt.","Es steht kein \"wenn\" — Inversion ersetzt es.","Es ist kein Konjunktiv II.","Der Satz hat keinen Hauptsatz."],"answer":1},{"type":"mc","prompt":"Welche K2-Form passt: \"Er hätte früher ___ (kommen) sollen.\"","task":"","options":["kommen","gekommen","kommt","kam"],"answer":0},{"type":"mc","prompt":"\"Sie benahm sich, als ob sie nichts gewusst hätte.\" — Zeitbezug des Vergleichs?","task":"","options":["Gegenwart","Zukunft","Vergangenheit","Gleichzeitig mit der Haupthandlung in der Zukunft"],"answer":2},{"type":"mc","prompt":"Was ist der Unterschied zwischen \"als ob + K2\" und \"als + K2 (Inversion)\"?","task":"","options":["Keine — beide sind identisch","Bedeutung gleich, aber bei \"als\" steht das Verb direkt nach \"als\" (Inversion)","als ob = formeller; als = umgangssprachlich","als ob = Vergangenheit; als = Gegenwart"],"answer":1},{"type":"mc","prompt":"\"Das könnte funktionieren.\" — Ist \"könnte\" hier objektiv oder subjektiv?","task":"","options":["Objektiv — irreale Bedingung","Subjektiv — Vermutung / Möglichkeit","Weder noch","Imperativ"],"answer":1},{"type":"mc","prompt":"Welcher Satz ist grammatisch FALSCH?","task":"","options":["Wenn sie das gewusst hätte, wäre sie geblieben.","Er tat so, als ob er krank gewesen wäre.","Hätte er mehr Zeit gehabt, hätte er geholfen.","Wenn er wäre gekommen, hätte ich ihn gesehen."],"answer":3},{"type":"mc","prompt":"\"Das müsste eigentlich besser sein.\" Was impliziert \"müsste\"?","task":"","options":["Es ist eine Pflicht.","Es ist eine Erwartung, die (noch) nicht erfüllt ist.","Es ist fast unmöglich.","Es ist eine Warnung."],"answer":1},{"type":"mc","prompt":"Welche Form ist korrekt für K2 Vergangenheit von \"machen\" (3. Person Singular)?","task":"","options":["würde machen","machte","hätte gemacht","hat gemacht"],"answer":2}],"2":[{"type":"fill","prompt":"Wenn er mehr geschlafen ___, wäre er nicht so müde gewesen.","task":"Ergänze den K2 Vergangenheit:","answer":"hätte","hint":"schlafen → hat geschlafen → hätte geschlafen"},{"type":"fill","prompt":"Wenn sie das Angebot angenommen ___, wäre sie jetzt Managerin.","task":"Ergänze:","answer":"hätte","hint":"annehmen → hat angenommen → hätte angenommen"},{"type":"fill","prompt":"Wenn er früher gestartet wäre, ___ er das Ziel erreicht.","task":"Ergänze den Hauptsatz:","answer":"hätte","hint":"erreichen → hat erreicht → hätte erreicht"},{"type":"fill","prompt":"___ sie mehr geübt, hätte sie die Prüfung bestanden.","task":"Ergänze (Inversion ohne wenn):","answer":"Hätte","hint":"Inversion: Hätte sie mehr geübt, … (Großschreibung!)"},{"type":"fill","prompt":"Das Projekt ___ erfolgreich gewesen sein, wenn mehr investiert worden wäre.","task":"Ergänze:","answer":"wäre","hint":"sein → wäre → wäre … gewesen"},{"type":"fill","prompt":"Er hätte früher kommen ___ — dann hätten wir alles erklärt.","task":"Ergänze (Modalverb):","answer":"können","hint":"K2 Verg. mit Modal: hätte + Inf. + können/müssen"},{"type":"fill","prompt":"Sie ___ das nicht sagen sollen — jetzt ist alles kompliziert.","task":"Ergänze:","answer":"hätte","hint":"hätte + Inf. + sollen"},{"type":"fill","prompt":"Wenn die Daten korrekt ___ ___, wäre das Ergebnis anders.","task":"Ergänze K2 Vergangenheit (sein):","answer":"gewesen wären","hint":"sein → wäre gewesen → im Wenn-Satz: gewesen wären"},{"type":"fill","prompt":"___ er früher informiert worden, hätte er reagieren können.","task":"Ergänze (Passiv + Inversion):","answer":"Wäre","hint":"werden → wäre … worden; Inversion ohne wenn"},{"type":"fill","prompt":"Wenn wir mehr Budget gehabt ___, ___ wir die besten Experten eingestellt.","task":"Ergänze beide Lücken:","answer":"hätten hätten","hint":"hätten + Inf. im Hauptsatz; hätten im Wenn-Satz"},{"type":"fill","prompt":"Das ___ vermieden werden können, wenn man früher eingegriffen hätte.","task":"Ergänze:","answer":"hätte","hint":"hätte … können (K2 Verg. mit Modalverb)"},{"type":"fill","prompt":"Sie hätten das Angebot annehmen ___ — jetzt ist es zu spät.","task":"Ergänze das Modalverb:","answer":"sollen","hint":"hätten + Inf. + sollen = hätten sollen"},{"type":"fill","prompt":"___ ich das früher gewusst, hätte ich anders entschieden.","task":"Ergänze (Inversion):","answer":"Hätte","hint":"Inversion: Hätte + Subjekt + Partizip II (Großschreibung!)"}],"3":[{"type":"mc","prompt":"\"Er spricht, als ob er alles wüsste.\"","task":"Welche Variante ist grammatisch FALSCH?","options":["Er spricht, als ob er alles wüsste.","Er spricht, als wenn er alles wüsste.","Er spricht, als wüsste er alles.","Er spricht, als ob er alles wissen würde."],"answer":3},{"type":"mc","prompt":"\"Sie verhält sich, ___ sie die Chefin ___.\"","task":"Welche Lückenfüllung ist korrekt (als + Inversion)?","options":["als ob / wäre","als / wäre","als wenn / ist","als / ist"],"answer":1},{"type":"fill","prompt":"Das Unternehmen wirkt, als ob es kurz vor dem Zusammenbruch ___ ___ ___.","task":"K2 Vergangenheit: als ob + wäre + gewesen:","answer":"gewesen wäre","hint":"sein → K2 Verg.: wäre gewesen → im Nebensatz: gewesen wäre"},{"type":"mc","prompt":"\"Er tat so, als hätte er es nicht gehört.\"","task":"Wie lautet die Variante mit \"als ob\"?","options":["Er tat so, als ob er es nicht gehört hat.","Er tat so, als ob er es nicht gehört hätte.","Er tat so, als ob er es nicht hören würde.","Er tat so, als ob er nicht hörte."],"answer":1},{"type":"fill","prompt":"Sie diskutierte, als ___ sie die einzige Expertin im Raum.","task":"Ergänze (als + Inversion, Gegenwart):","answer":"wäre","hint":"als + wäre + Subjekt (Inversion nach als)"},{"type":"mc","prompt":"Welcher Satz drückt einen irrealen Vergleich in der VERGANGENHEIT aus?","task":"","options":["Er tut so, als wäre er krank.","Er tat so, als hätte er nichts gewusst.","Das könnte stimmen.","Wenn er käme, wäre ich froh."],"answer":1},{"type":"fill","prompt":"Das Ergebnis sieht aus, als ___ die Daten manipuliert worden ___.","task":"Passiv K2 Vergangenheit + als ob:","answer":"wären worden","hint":"als ob … worden wären → als + wären … worden (Inversion)"},{"type":"mc","prompt":"\"Als wäre nichts gewesen\" — Was bedeutet dieser Ausdruck?","task":"","options":["Als ob etwas Schlimmes passiert wäre","Als ob nichts Ungewöhnliches passiert wäre — normal weitermachen","Als ob alles vorbei wäre","Als ob es nicht existiert hätte"],"answer":1},{"type":"mc","prompt":"Welche Form ist korrekt?","task":"\"Die Studie wirkt, als ob sie ___ gründlich durchgeführt worden ___.\"","options":["nicht / wäre","nicht / hätte","nicht / ist","nicht / wurde"],"answer":0},{"type":"fill","prompt":"Er sprach, als ___ er der Direktor des Unternehmens.","task":"als + Inversion, Gegenwart (sein):","answer":"wäre","hint":"als wäre er … (Inversion nach als)"},{"type":"mc","prompt":"Was ist der stilistische Unterschied zwischen \"als ob\" und \"als\" (Inversion)?","task":"","options":["\"als ob\" ist formeller","kein Unterschied in der Bedeutung; \"als\" mit Inversion klingt formeller","als ob = Vergangenheit; als = Gegenwart","als wenn = formeller als als ob"],"answer":1},{"type":"fill","prompt":"Das Projekt verlief, als ___ niemand die Risiken ___ ___ ___.","task":"als ob + K2 Vergangenheit (berücksichtigen → hätte berücksichtigt):","answer":"ob niemand die Risiken berücksichtigt hätte","hint":"als ob + Verb ans Ende: … berücksichtigt hätte"},{"type":"mc","prompt":"Welcher Satz ist C1-typisch formell?","task":"","options":["Er tat so, als wenn er alles wüsste.","Er verhielt sich, als wäre er der einzige Verantwortliche.","Er machte so, als ob er es gewusst hätte vielleicht.","Er tat, als ob alles gut wäre gewesen."],"answer":1}],"4":[{"type":"mc","prompt":"\"Das dürfte ausreichen.\" — Was bedeutet \"dürfte\" hier?","task":"","options":["Es ist erlaubt zu reichen.","Es ist wahrscheinlich ausreichend (begründete Einschätzung).","Es muss reichen.","Es soll reichen."],"answer":1},{"type":"mc","prompt":"\"Er müsste eigentlich schon angekommen sein.\" — Was drückt \"müsste\" aus?","task":"","options":["Eine Pflicht in der Vergangenheit","Eine Erwartung, die (noch) nicht bestätigt ist","Eine irreale Bedingung","Eine Warnung"],"answer":1},{"type":"mc","prompt":"Welcher Satz verwendet \"könnte\" subjektiv (= Vermutung)?","task":"","options":["Wenn er mehr Zeit hätte, könnte er helfen.","Er könnte Recht haben.","Könntest du mir helfen?","Sie könnte früher kommen, wenn sie wollte."],"answer":1},{"type":"mc","prompt":"\"Das sollte eigentlich klappen.\" — Was impliziert der Sprecher?","task":"","options":["Er ist sicher, dass es klappt.","Er erwartet es — aber es klappt vielleicht nicht.","Er befiehlt, dass es klappt.","Er zweifelt vollständig daran."],"answer":1},{"type":"mc","prompt":"Welche Form ist richtig: \"Die Ergebnisse ___ besser sein — die Bedingungen waren ideal.\"","task":"subjektive Erwartung (nicht erfüllt)","options":["müssen","sollten","müssten","dürfen"],"answer":2},{"type":"mc","prompt":"\"Das dürfte wohl stimmen.\" — Welche Nuance hat diese Kombination?","task":"","options":["Sehr unsicher","Sehr starke Vermutung mit hoher Wahrscheinlichkeit","Warnung","Irreale Bedingung"],"answer":1},{"type":"mc","prompt":"Welcher Satz verwendet \"dürfte\" NICHT subjektiv?","task":"","options":["Das dürfte ein Fehler sein.","Die Lösung dürfte komplex sein.","Er dürfte nicht rauchen — er ist krank.","Das dürfte ausreichen."],"answer":2},{"type":"mc","prompt":"\"Es könnte sein, dass er krank ist.\" — Wie stark ist diese Vermutung?","task":"","options":["Fast sicher (~90%)","Möglich, aber unsicher (~40-50%)","Ausgeschlossen","Sehr wahrscheinlich (~80%)"],"answer":1},{"type":"fill","prompt":"Die Maßnahmen ___ ausreichend sein, um die Krise zu überwinden.","task":"Subjektive Einschätzung (wahrscheinlich):","answer":"dürften","hint":"dürften = wahrscheinlich (Plural: dürften)"},{"type":"fill","prompt":"Das Ergebnis ___ eigentlich besser sein — die Bedingungen waren perfekt.","task":"Erwartung, nicht erfüllt:","answer":"müsste","hint":"müsste = eigentlich sollte (logische Erwartung)"},{"type":"fill","prompt":"Es ___ sein, dass die Daten fehlerhaft sind — ich bin nicht sicher.","task":"Schwache Vermutung:","answer":"könnte","hint":"könnte = vielleicht (unsichere Vermutung)"},{"type":"mc","prompt":"\"Das sollte eigentlich nicht passieren.\" — Was drückt \"sollte\" aus?","task":"","options":["Befehl / Auftrag","Eine Norm oder Erwartung, die verletzt wurde","Wahrscheinlichkeit","Irreale Bedingung"],"answer":1},{"type":"mc","prompt":"Welcher Satz ist C1-typisch für einen wissenschaftlichen Bericht?","task":"","options":["Die Ergebnisse sind vielleicht richtig.","Die Ergebnisse dürften die Hypothese bestätigen.","Die Ergebnisse könnten vielleicht sein richtig.","Die Ergebnisse sollten richtig sein vielleicht."],"answer":1}],"5":[{"type":"mc","prompt":"Welcher Satz enthält einen FEHLER im K2 Vergangenheit?","task":"","options":["Wenn sie mehr geübt hätte, hätte sie bestanden.","Hätte er investiert, wäre das Projekt erfolgreich gewesen.","Wenn er wäre früher gegangen, hätten wir ihn gesehen.","Sie hätte das nicht sagen sollen."],"answer":2},{"type":"fill","prompt":"C1-Schreiben: \"Wenn die Reformen früher eingeleitet worden ___, ___ die Probleme vermieden werden können.\"","task":"Ergänze K2 Vergangenheit (Passiv):","answer":"wären hätten","hint":"wären … worden + hätten … können (Passiv K2 Verg.)"},{"type":"mc","prompt":"Welche Formulierung klingt am formalsten für eine C1-Stellungnahme?","task":"","options":["Wenn man das früher gewusst hätte, wäre alles besser.","Das dürfte die effektivste Lösung sein.","Ich glaube, das ist wahrscheinlich richtig.","Das ist vielleicht richtig."],"answer":1},{"type":"fill","prompt":"\"Das Unternehmen verhielt sich in der Krise, ___ ___ die Insolvenz keine Option ___.\"","task":"Irrealer Vergleich + K2 Verg. (als wäre … gewesen):","answer":"als wäre die Insolvenz keine Option gewesen","hint":"als + Inversion + K2 Vergangenheit: als wäre … gewesen"},{"type":"mc","prompt":"Welcher Satz verwendet K2 Vergangenheit mit Modalverb korrekt?","task":"","options":["Er hätte früher kommen gesollt.","Er hätte früher kommen sollen.","Er sollte früher gekommen haben.","Er wäre früher kommen sollen."],"answer":1},{"type":"mc","prompt":"In einer C1-Analyse: Welche Formulierung ist am präzisesten?","task":"\"Vielleicht reichen die Maßnahmen.\"","options":["Die Maßnahmen könnten reichen.","Die Maßnahmen dürften ausreichen.","Die Maßnahmen sollten reichen vielleicht.","Die Maßnahmen wären ausreichend."],"answer":1},{"type":"fill","prompt":"C1-Text: \"Die Entscheidung wirkt, ___ sie ohne ausreichende Datenlage ___ worden ___.\"","task":"Irrealer Vergleich + Passiv K2 Verg.:","answer":"als wäre sie ohne ausreichende Datenlage getroffen worden","hint":"als + wäre + Passiv K2 Verg.: … getroffen worden"},{"type":"mc","prompt":"Welcher Satz kombiniert K2 Vergangenheit mit Passiv korrekt?","task":"","options":["Das Projekt wäre besser geplant worden, wenn mehr Budget vorhanden gewesen wäre.","Das Projekt hätte besser geplant sein, wenn Budget wäre da gewesen.","Das Projekt wäre besser geplant haben, wenn Budget da wäre.","Das Projekt hätte geplant werden besser, wenn Budget da gewesen hätte."],"answer":0},{"type":"fill","prompt":"___ die Warnsignale früher erkannt worden, ___ man rechtzeitig handeln können.","task":"Inversion + Passiv K2 Verg.:","answer":"Wären hätte","hint":"Wären … worden (Passiv, Inversion); hätte … können (K2 Verg. Modal)"},{"type":"mc","prompt":"Was ist der Unterschied zwischen \"müsste\" und \"hätte müssen\"?","task":"","options":["kein Unterschied","müsste = Erwartung/Einschätzung jetzt; hätte müssen = Erwartung/Pflicht in der Vergangenheit","müsste = Vergangenheit; hätte müssen = Gegenwart","müsste = formell; hätte müssen = informell"],"answer":1},{"type":"mc","prompt":"Welcher Satz enthält \"als\" mit korrekter Inversion?","task":"","options":["Das sah aus, als ob hätte man keine Zeit.","Das sah aus, als hätte man keine Zeit.","Das sah aus, als man hätte keine Zeit.","Das sah aus, als wenn man hätte keine Zeit."],"answer":1},{"type":"fill","prompt":"Das ___ eigentlich nicht passieren ___ — die Sicherheitsmaßnahmen waren ausreichend.","task":"Erwartung verletzt + K2 Verg. mit Modal:","answer":"hätte dürfen","hint":"hätte + Inf. + dürfen = hätte nicht passieren dürfen"},{"type":"mc","prompt":"Welche Aussage über K2 auf C1-Niveau ist FALSCH?","task":"","options":["Der Irrealis der Vergangenheit: hätte/wäre + Partizip II","Modalverben im K2 können subjektive Bedeutung haben","Als + Inversion klingt formeller als als ob","würde + Infinitiv ist immer falscher als synthetischer K2"],"answer":3}]},"examples":[{"de":"Wenn ich Zeit hätte, würde ich reisen. (Gegenwart/Zukunft)","vi":"Nếu tôi có thời gian, tôi sẽ đi du lịch. (hiện tại/tương lai không thực)","phrase":null,"note":null},{"de":"Wenn ich Zeit gehabt hätte, wäre ich gereist. (Vergangenheit)","vi":"Nếu tôi đã có thời gian, tôi đã đi du lịch rồi. (quá khứ không thực)","phrase":null,"note":null},{"de":"Er tut so, als ob er alles wüsste. (irrealer Vergleich)","vi":"Anh ấy cư xử như thể biết tất cả mọi thứ. (so sánh giả định)","phrase":null,"note":null},{"de":"Das dürfte schwierig sein. (subjektiv = wahrscheinlich)","vi":"Điều đó có lẽ sẽ khó khăn. (suy đoán có cơ sở)","phrase":null,"note":null},{"de":"Wenn die Regierung früher gehandelt hätte, wäre die Krise vermieden worden.","vi":"Nếu chính phủ đã hành động sớm hơn, cuộc khủng hoảng đã được tránh khỏi.","phrase":null,"note":"Passiv + K2 Vergangenheit: wäre … worden"},{"de":"Hätte er mehr investiert, hätte das Unternehmen überleben können.","vi":"Nếu anh ấy đầu tư nhiều hơn, công ty đã có thể tồn tại được.","phrase":null,"note":"Ohne „wenn\": Inversion — Verb an erste Stelle"},{"de":"Sie hätte das nicht sagen sollen — jetzt ist die Stimmung schlecht.","vi":"Cô ấy đáng lẽ không nên nói điều đó — bây giờ bầu không khí rất tệ.","phrase":null,"note":null},{"de":"Wenn ich das gewusst hätte, wäre ich nicht gegangen.","vi":"Nếu tôi đã biết điều đó, tôi đã không đi rồi.","phrase":null,"note":null},{"de":"Die Daten sehen aus, als ob sie manipuliert worden wären.","vi":"Dữ liệu trông như thể đã bị thao túng.","phrase":null,"note":"Passiv K2 Vergangenheit: wären … worden"},{"de":"Er redete, als wäre er der einzige Experte.","vi":"Anh ấy nói chuyện như thể anh ấy là chuyên gia duy nhất.","phrase":null,"note":"als + Inversion: formeller Stil"},{"de":"Sie benahm sich, als ob sie nichts davon gewusst hätte.","vi":"Cô ấy cư xử như thể không hề biết gì về điều đó.","phrase":null,"note":"Vergangenheitsbezug: K2 Perfekt im Vergleichssatz"},{"de":"Das Projekt wirkt, als hätte man es hastig geplant.","vi":"Dự án trông như thể đã được lên kế hoạch vội vàng.","phrase":null,"note":"als + Inversion + Vergangenheit"},{"de":"Die Maßnahmen dürften ausreichend sein, um die Lage zu stabilisieren.","vi":"Các biện pháp có lẽ đủ để ổn định tình hình. (dự đoán có cơ sở)","phrase":null,"note":null},{"de":"Das Ergebnis müsste eigentlich besser sein — die Bedingungen waren ideal.","vi":"Kết quả đáng lẽ phải tốt hơn — điều kiện hoàn hảo mà. (kỳ vọng không được đáp ứng)","phrase":null,"note":null},{"de":"Es könnte sein, dass die Daten fehlerhaft sind.","vi":"Có thể là dữ liệu bị sai. (khả năng yếu, không chắc)","phrase":null,"note":null},{"de":"Die Lösung sollte eigentlich funktionieren — ich verstehe das Problem nicht.","vi":"Giải pháp lẽ ra phải hoạt động được — tôi không hiểu vấn đề. (kỳ vọng bị vi phạm)","phrase":null,"note":null}]},{"id":"infinitivkonstruktionen-c1","title":"Infinitivkonstruktionen","tag":"Syntax","desc":"um … zu, ohne … zu, anstatt … zu — Nebensatz ↔ Infinitiv","levels":{"1":[{"type":"mc","prompt":"Er lernt Deutsch, um in Deutschland zu arbeiten.","task":"Welche Funktion hat die Infinitivkonstruktion?","options":["Bedingung","Zweck / Ziel","fehlende Handlung","Alternative"],"answer":1},{"type":"mc","prompt":"Sie verließ das Treffen, ohne sich zu entschuldigen.","task":"Was drückt \"ohne ... zu\" aus?","options":["eine Alternative","ein Ziel","eine fehlende erwartete Handlung","eine Bedingung"],"answer":2},{"type":"mc","prompt":"Er surfte im Internet, anstatt die Aufgabe zu erledigen.","task":"Was drückt \"anstatt ... zu\" aus?","options":["Zweck","fehlende Handlung","eine Handlung, die stattdessen getan wurde","Folge"],"answer":2},{"type":"mc","prompt":"Welcher Satz enthält eine Infinitivkonstruktion mit \"um ... zu\"?","task":"","options":["Er arbeitet, ohne Pausen zu machen.","Sie lernt, um die Prüfung zu bestehen.","Er blieb, anstatt zu gehen.","Er las, ohne es zu verstehen."],"answer":1},{"type":"mc","prompt":"Das Unternehmen investiert in Schulungen, um die Mitarbeiter zu qualifizieren.","task":"Welcher damit-Satz entspricht dieser Konstruktion?","options":["damit die Mitarbeiter qualifizieren","damit die Mitarbeiter qualifiziert werden","damit qualifiziert werden kann","damit man qualifizieren kann"],"answer":1},{"type":"mc","prompt":"Er kritisierte den Plan, ohne Alternativen vorzuschlagen.","task":"Warum heißt es \"vorzuschlagen\" und nicht \"zu vorschlagen\"?","options":["vorschlagen ist kein trennbares Verb","bei trennbaren Verben steht zu zwischen Präfix und Stamm","zu kommt am Ende","es ist eine Ausnahme"],"answer":1},{"type":"mc","prompt":"Welche Konstruktion ist grammatisch FALSCH?","task":"","options":["Er geht, um einzukaufen.","Sie blieb, ohne etwas zu sagen.","Er arbeitete, anstatt zu spielen.","Er lernte, um sie zu bestehen."],"answer":3},{"type":"mc","prompt":"Sie hat die Aufgabe abgegeben, ohne sie überprüft zu haben.","task":"Was bedeutet der Perfektinfinitiv hier?","options":["Sie wird sie überprüfen.","Die Überprüfung liegt vor der Abgabe — sie hat nicht überprüft.","Sie hat sie überprüft und dann abgegeben.","Sie überprüft sie gerade."],"answer":1},{"type":"mc","prompt":"Welcher Satz verwendet \"ohne ... zu\" korrekt?","task":"","options":["Er schlief, ohne dass er schlief.","Sie sprach, ohne zu unterbrechen.","Er ging, ohne zu er es merkte.","Sie half, ohne zu sie etwas verlangte."],"answer":1},{"type":"mc","prompt":"In welchem Satz MUSS ein Nebensatz (damit/ohne dass) verwendet werden?","task":"","options":["Er lernt, um die Prüfung zu bestehen.","Er lernt, damit seine Eltern stolz sind.","Sie übt, um besser zu werden.","Er liest viel, um den Wortschatz zu erweitern."],"answer":1},{"type":"mc","prompt":"Welcher Satz klingt C1-typisch formell?","task":"","options":["Er macht das, weil er besser werden will.","Er tut das, um besser zu werden.","Er will besser sein.","Er macht das für Verbesserung."],"answer":1},{"type":"mc","prompt":"Sie übernahm mehr Aufgaben, anstatt Hilfe anzufordern.","task":"Welcher Nebensatz entspricht dem?","options":["anstatt dass sie Hilfe hatte","anstatt dass sie Hilfe anforderte","anstatt dass Hilfe angefordert wurde von ihr","anstatt dass man hilft"],"answer":1},{"type":"mc","prompt":"Was ist die Infinitivkonstruktion von: \"damit er sich vorbereiten kann\"?","task":"(gleiches Subjekt vorausgesetzt)","options":["um vorbereiten zu können","um sich vorbereiten zu können","um sich zu vorbereiten können","um vorbereiten können zu"],"answer":1}],"2":[{"type":"mc","prompt":"Er trainiert täglich, (damit er / um zu) die Ausdauer zu verbessern.","task":"Sind die Subjekte gleich? Welche Form ist korrekt?","options":["verschiedene Subjekte → damit er die Ausdauer verbessert","gleiche Subjekte → um die Ausdauer zu verbessern","beides ist möglich","gleiche Subjekte → damit verbessert"],"answer":1},{"type":"mc","prompt":"Die Lehrerin erklärt langsam, damit die Schüler alles verstehen.","task":"Kann man hier \"um ... zu\" verwenden?","options":["Ja: um alles zu verstehen","Nein: verschiedene Subjekte → damit bleibt","Ja: um die Schüler zu verstehen","Nein: damit ist immer besser"],"answer":1},{"type":"mc","prompt":"Sie spart Geld, (ohne auszugeben / ohne dass sie ausgibt).","task":"Gleiche Subjekte → welche Form?","options":["ohne dass sie ausgibt","ohne auszugeben","beide korrekt","keine ist korrekt"],"answer":1},{"type":"mc","prompt":"Er verließ die Besprechung, ohne dass der Chef es merkte.","task":"Kann man hier \"ohne ... zu\" verwenden?","options":["Ja: ohne zu merken","Nein: verschiedene Subjekte → ohne dass bleibt","Ja: ohne es zu merken","Ja: ohne der Chef es zu merken"],"answer":1},{"type":"mc","prompt":"Das Team arbeitete weiter, anstatt eine Pause zu machen.","task":"Wer macht die Pause (nicht)?","options":["jemand anderes","das Team selbst — gleiche Subjekte","unklar","der Chef"],"answer":1},{"type":"mc","prompt":"Der Manager entschied allein, anstatt dass das Team einbezogen wurde.","task":"Gleiche Subjekte?","options":["Ja → anstatt einzubeziehen","Nein → anstatt dass bleibt (Team ≠ Manager)","Ja → anstatt zu entscheiden","Nein, aber Infinitiv ist trotzdem möglich"],"answer":1},{"type":"mc","prompt":"Sie kamen pünktlich, ohne dass jemand sie erinnerte.","task":"Gleiche Subjekte?","options":["Ja → ohne sich zu erinnern","Nein → ohne dass bleibt","Ja → ohne erinnert zu werden","Nein → um ... zu verwenden"],"answer":1},{"type":"mc","prompt":"Er bestand die Prüfung, ohne gelernt zu haben.","task":"Was bedeutet der Perfektinfinitiv hier?","options":["Er wird lernen.","Das Nicht-Lernen liegt zeitlich vor dem Bestehen.","Er hat gleichzeitig gelernt und bestanden.","Er lernt nach der Prüfung."],"answer":1},{"type":"mc","prompt":"Fachkräfte werden ausgebildet, damit die Industrie ihren Bedarf decken kann.","task":"Gleiche Subjekte?","options":["Ja, Fachkräfte = Industrie","Nein, Fachkräfte ≠ Industrie → damit bleibt","Ja → um den Bedarf zu decken","Nein, aber Infinitiv wäre grammatisch"],"answer":1},{"type":"mc","prompt":"Er schreibt E-Mails, anstatt anzurufen.","task":"Wer ruft nicht an?","options":["jemand anderes","der Empfänger der E-Mail","er selbst — gleiche Subjekte","unklar"],"answer":2},{"type":"mc","prompt":"Die Firma senkte die Preise, damit mehr Kunden kaufen.","task":"Kann man hier \"um ... zu\" verwenden?","options":["Ja: um mehr zu kaufen","Nein: verschiedene Subjekte","Ja: um kaufen zu können","Nein, der Satz hat keinen Zweck"],"answer":1},{"type":"mc","prompt":"Sie übersetzte den Text, ohne ein Wörterbuch zu benutzen.","task":"Wer benutzt kein Wörterbuch?","options":["jemand anderes","sie selbst — gleiche Subjekte","der Text","der Leser"],"answer":1},{"type":"mc","prompt":"Er wurde befördert, anstatt entlassen zu werden.","task":"Welcher Nebensatz entspricht dem?","options":["anstatt dass er entließ","anstatt dass er entlassen wurde","anstatt zu entlassen ihn","anstatt dass entlassen wird"],"answer":1}],"3":[{"type":"fill","prompt":"Er lernt Deutsch, damit er in Berlin arbeiten kann.","task":"Forme um mit \"um ... zu\" (gleiche Subjekte):","answer":"Er lernt Deutsch, um in Berlin arbeiten zu können.","hint":"damit + kann → um … zu + können (Modalinfinitiv)"},{"type":"fill","prompt":"Sie spart Geld, ohne dass sie etwas ausgibt.","task":"Forme um mit \"ohne ... zu\":","answer":"Sie spart Geld, ohne etwas auszugeben.","hint":"ausgeben (trennbar): aus·zu·geben"},{"type":"fill","prompt":"Er diskutierte stundenlang, anstatt dass er handelte.","task":"Forme um mit \"anstatt ... zu\":","answer":"Er diskutierte stundenlang, anstatt zu handeln.","hint":"handeln → zu handeln (einfach)"},{"type":"fill","prompt":"Sie nahm an der Konferenz teil, um neue Kontakte zu knüpfen.","task":"Forme um mit \"damit\" (gleiche Subjekte):","answer":"Sie nahm an der Konferenz teil, damit sie neue Kontakte knüpfte.","hint":"um … zu → damit + Subjekt + Verb"},{"type":"fill","prompt":"Das Team arbeitete bis Mitternacht, ohne eine Pause einzulegen.","task":"Forme um mit \"ohne dass\":","answer":"Das Team arbeitete bis Mitternacht, ohne dass es eine Pause einlegte.","hint":"ohne … zu → ohne dass + Subjekt + Verb"},{"type":"fill","prompt":"Er verließ die Firma, ohne sich zu verabschieden.","task":"Forme um mit \"ohne dass\":","answer":"Er verließ die Firma, ohne dass er sich verabschiedete.","hint":"ohne … zu → ohne dass + Subjekt"},{"type":"fill","prompt":"Die Regierung senkt Steuern, um die Wirtschaft anzukurbeln.","task":"Forme um mit \"damit\":","answer":"Die Regierung senkt Steuern, damit die Wirtschaft angekurbelt wird.","hint":"Passiv im damit-Satz, da Wirtschaft ≠ Regierung"},{"type":"fill","prompt":"Sie blieb zu Hause, anstatt zur Arbeit zu gehen.","task":"Forme um mit \"anstatt dass\":","answer":"Sie blieb zu Hause, anstatt dass sie zur Arbeit ging.","hint":"anstatt … zu → anstatt dass + Subjekt + Verb"},{"type":"fill","prompt":"Er reiste viel, um andere Kulturen kennenzulernen.","task":"Forme um mit \"damit\" (gleiche Subjekte):","answer":"Er reiste viel, damit er andere Kulturen kennenlernte.","hint":"um … zu → damit + er + Verb"},{"type":"fill","prompt":"Die Mitarbeiter wurden versetzt, anstatt dass man sie beförderte.","task":"Forme um mit \"anstatt ... zu\" (Passiv-Infinitiv):","answer":"Die Mitarbeiter wurden versetzt, anstatt befördert zu werden.","hint":"anstatt dass → anstatt + Partizip II + zu werden"},{"type":"fill","prompt":"Er bestand, ohne sich vorbereitet zu haben.","task":"Forme um mit \"ohne dass\":","answer":"Er bestand, ohne dass er sich vorbereitet hatte.","hint":"Perfektinfinitiv → Plusquamperfekt im ohne-dass-Satz"},{"type":"fill","prompt":"Sie kritisierte, ohne Verbesserungsvorschläge zu machen.","task":"Forme um mit \"ohne dass\":","answer":"Sie kritisierte, ohne dass sie Verbesserungsvorschläge machte.","hint":"ohne … zu → ohne dass + Subjekt + Verb"},{"type":"fill","prompt":"Er wartete stundenlang, anstatt früher zu gehen.","task":"Forme um mit \"anstatt dass\":","answer":"Er wartete stundenlang, anstatt dass er früher ging.","hint":"anstatt … zu → anstatt dass + Subjekt + Verb (Prät.)"}],"4":[{"type":"fill","prompt":"Das Unternehmen investiert in Weiterbildung, ___ die Produktivität ___ steigern.","task":"Ergänze um … zu:","answer":"um die Produktivität zu steigern","hint":"um + Objekt + zu + Infinitiv"},{"type":"fill","prompt":"Er verließ das Meeting früher, ___ sich ___ verabschieden.","task":"Ergänze ohne … zu:","answer":"ohne sich zu verabschieden","hint":"ohne + Reflexivpronomen + zu + Infinitiv"},{"type":"fill","prompt":"Sie schickte eine Textnachricht, ___ persönlich ___kommen.","task":"Ergänze anstatt … zu (trennbar):","answer":"anstatt persönlich zu kommen","hint":"anstatt + zu + Infinitiv (kommen = nicht trennbar)"},{"type":"fill","prompt":"Er trainierte täglich, ___ an den Olympischen Spielen ___ können.","task":"Ergänze um … zu + Modalinfinitiv:","answer":"um teilnehmen zu können","hint":"um + Infinitiv + zu + können"},{"type":"fill","prompt":"Die Azubis absolvierten Praktika, ___ Berufserfahrung ___ sammeln.","task":"Ergänze um … zu:","answer":"um Berufserfahrung zu sammeln","hint":"um + Objekt + zu + Infinitiv"},{"type":"fill","prompt":"Sie beendete die Arbeit, ___ die Ergebnisse ___ prüfen.","task":"Ergänze ohne … zu:","answer":"ohne die Ergebnisse zu prüfen","hint":"ohne + Objekt + zu + Infinitiv"},{"type":"fill","prompt":"Der Manager traf Entscheidungen, ___ das Team ___zubeziehen.","task":"Ergänze ohne … zu (trennbar: einbeziehen):","answer":"ohne das Team einzubeziehen","hint":"einbeziehen (trennbar) → ein·zu·beziehen"},{"type":"fill","prompt":"Die Firma expandierte, ___ neue Mitarbeiter ___ stellen.","task":"Ergänze anstatt … zu:","answer":"anstatt neue Mitarbeiter einzustellen","hint":"einstellen (trennbar) → ein·zu·stellen"},{"type":"fill","prompt":"Er absolvierte die Ausbildung, ___ wettbewerbsfähig ___ bleiben.","task":"Ergänze um … zu:","answer":"um wettbewerbsfähig zu bleiben","hint":"um + Adjektiv + zu + bleiben"},{"type":"fill","prompt":"Sie übernahm Überstunden, ___ befördert ___ werden.","task":"Ergänze um … zu (Passiv-Infinitiv):","answer":"um befördert zu werden","hint":"um + Partizip II + zu + werden"},{"type":"fill","prompt":"Er wechselte den Beruf, ___ in seiner Komfortzone ___ bleiben.","task":"Ergänze anstatt … zu:","answer":"anstatt in seiner Komfortzone zu bleiben","hint":"anstatt + Präp.phrase + zu + Infinitiv"},{"type":"fill","prompt":"Das Produkt wurde lanciert, ___ ausreichend ___ worden zu sein.","task":"Ergänze ohne (Perfektinfinitiv Passiv):","answer":"ohne ausreichend getestet worden zu sein","hint":"ohne + Part.II + worden + zu + sein"},{"type":"fill","prompt":"Die Abteilung reorganisierte sich, ___ externe Berater ___ beizuziehen.","task":"Ergänze ohne … zu (trennbar: beiziehen):","answer":"ohne externe Berater beizuziehen","hint":"beiziehen (trennbar) → bei·zu·ziehen"}],"5":[{"type":"mc","prompt":"Wähle die C1-gerechte Formulierung für: \"Er arbeitet hart, weil er Karriere machen will.\"","task":"","options":["Er arbeitet hart, damit Karriere gemacht wird.","Er arbeitet hart, um Karriere zu machen.","Er arbeitet hart, um zu machen Karriere.","Er arbeitet hart, anstatt Karriere zu machen."],"answer":1},{"type":"mc","prompt":"Welcher Satz ist in einer formellen Stellungnahme am besten?","task":"Thema: Digitalisierung im Bildungswesen","options":["Man muss digitale Medien nutzen, weil der Unterricht besser wird.","Digitale Medien sollten eingesetzt werden, um den Unterricht zu modernisieren.","Man soll digitale Medien benutzen, damit Unterricht besser ist.","Digitale Medien, anstatt traditionelle Methoden zu verwenden."],"answer":1},{"type":"fill","prompt":"C1-Stellungnahme: \"Viele Unternehmen investieren in Digitalisierung, ___ (wettbewerbsfähig bleiben).\"","task":"Formuliere mit um … zu:","answer":"um wettbewerbsfähig zu bleiben","hint":"um + Adjektiv + zu + Infinitiv"},{"type":"mc","prompt":"Welcher Satz enthält einen Fehler?","task":"","options":["Er bewarb sich, um eine Stelle zu bekommen.","Sie lernte, ohne nachzuschlagen.","Er arbeitete, anstatt zu pausieren.","Er lernte, um sie eine gute Note zu bekommen."],"answer":3},{"type":"fill","prompt":"C1-Text: \"Die Reform wurde durchgeführt, ___ (strukturelle Probleme lösen).\"","task":"Formuliere mit um … zu (Passiv-Infinitiv, da Subjekte gleich):","answer":"um strukturelle Probleme zu lösen","hint":"Aktiv-Infinitiv hier möglich, da Reform = strukturelle Probleme lösen (derselbe Rahmen)"},{"type":"mc","prompt":"In einer Bewerbung: Welcher Satz klingt am professionellsten?","task":"\"Ich mache das Praktikum, weil ich mehr lernen möchte.\"","options":["Ich mache das Praktikum, damit ich lerne.","Ich absolviere das Praktikum, um praktische Erfahrungen zu sammeln.","Ich mache das Praktikum, anstatt in der Schule zu sein.","Ich mache das Praktikum, ohne zu lernen."],"answer":1},{"type":"fill","prompt":"C1: \"Er übernahm alle Aufgaben allein, ___ (Kollegen einbeziehen, ohne).\"","task":"Formuliere mit ohne … zu:","answer":"ohne Kollegen einzubeziehen","hint":"einbeziehen (trennbar): ein·zu·beziehen"},{"type":"mc","prompt":"Welche Umformung ist vollständig korrekt?","task":"\"Sie diskutierten, anstatt dass sie Lösungen fanden.\"","options":["Sie diskutierten, anstatt zu Lösungen finden.","Sie diskutierten, anstatt Lösungen zu finden.","Sie diskutierten, anstatt Lösungen gefunden zu haben.","Sie diskutierten, um Lösungen zu finden."],"answer":1},{"type":"fill","prompt":"C1-Analyse: \"Die Kosten stiegen, ___ die Qualität zu verbessern.\" (ohne)","task":"","answer":"ohne die Qualität zu verbessern","hint":"ohne + Objekt + zu + Infinitiv"},{"type":"mc","prompt":"Welche Kombination von Infinitivkonstruktionen passt in einen C1-Text?","task":"\"Fachkräfte absolvieren Weiterbildungen, ___ ihre Kompetenzen zu erweitern, ___ auf dem neuesten Stand zu bleiben.\"","options":["damit / ohne","um / und um","anstatt / ohne","um / anstatt"],"answer":1},{"type":"fill","prompt":"C1-Bericht: \"Das Team gab auf, ___ alle Optionen ___ geprüft zu haben.\" (Perfektinfinitiv)","task":"Ergänze ohne … zu:","answer":"ohne alle Optionen geprüft zu haben","hint":"ohne + Objekt + Partizip II + zu + haben"},{"type":"mc","prompt":"Welche Aussage über Infinitivkonstruktionen ist FALSCH?","task":"","options":["Bei gleichen Subjekten bevorzugt man den Infinitiv.","\"anstatt ... zu\" kann nie mit Passiv verwendet werden.","Trennbare Verben: zu steht zwischen Präfix und Stamm.","Der Perfektinfinitiv zeigt Vorzeitigkeit."],"answer":1},{"type":"fill","prompt":"Wandle um: \"Die Mitarbeiter wurden entlassen, anstatt dass man sie weiterbildete.\"","task":"Forme um mit Infinitivkonstruktion:","answer":"Die Mitarbeiter wurden entlassen, anstatt weitergebildet zu werden.","hint":"anstatt dass → anstatt + Partizip II + zu werden (Passiv-Infinitiv)"}]},"examples":[{"de":"✅ Er lernt, um zu bestehen. (gleich: er … er)","vi":"Anh ấy học để thi đỗ. (cùng chủ ngữ → dùng Infinitiv)","phrase":null,"note":null},{"de":"✅ Sie ging, ohne sich zu bedanken. (gleich)","vi":"Cô ấy đi mà không cảm ơn. (cùng chủ ngữ → Infinitiv)","phrase":null,"note":null},{"de":"Das Unternehmen investiert in Forschung, um wettbewerbsfähig zu bleiben.","vi":"Công ty đầu tư vào nghiên cứu để duy trì khả năng cạnh tranh.","phrase":null,"note":null},{"de":"Die Regierung senkt Steuern, um die Wirtschaft anzukurbeln.","vi":"Chính phủ giảm thuế để thúc đẩy kinh tế.","phrase":null,"note":"trennbares Verb: ankurbeln → anzukurbeln"},{"de":"Sie absolvierte ein Praktikum, um Berufserfahrung zu sammeln.","vi":"Cô ấy thực tập để tích lũy kinh nghiệm nghề nghiệp.","phrase":null,"note":null},{"de":"Fachkräfte werden ausgebildet, um den Bedarf der Industrie zu decken.","vi":"Nhân lực chuyên môn được đào tạo để đáp ứng nhu cầu của ngành công nghiệp.","phrase":null,"note":"Passiv + um … zu: möglich, wenn logisches Subjekt identisch ist"},{"de":"Das Projekt wurde beendet, ohne die gesetzten Ziele zu erreichen.","vi":"Dự án đã kết thúc mà không đạt được các mục tiêu đã đề ra.","phrase":null,"note":null},{"de":"Er kritisierte die Maßnahmen, ohne konstruktive Alternativen vorzuschlagen.","vi":"Anh ta chỉ trích các biện pháp mà không đề xuất giải pháp thay thế mang tính xây dựng.","phrase":null,"note":"trennbares Verb: vorschlagen → vorzuschlagen"},{"de":"Die Mitarbeiter wurden entlassen, anstatt umgeschult zu werden.","vi":"Các nhân viên bị sa thải thay vì được đào tạo lại.","phrase":null,"note":"Passiv-Infinitiv: anstatt umgeschult zu werden"},{"de":"Die Führungskraft traf Entscheidungen, anstatt das Team einzubeziehen.","vi":"Người lãnh đạo đưa ra quyết định thay vì đưa nhóm vào cuộc.","phrase":null,"note":null}]},{"id":"funktionsverbgefuege-c1","title":"Funktionsverbgefüge","tag":"FVG","desc":"in Gang setzen, zur Verfügung stellen, in Frage stellen — formeller Stil","levels":{"1":[{"type":"mc","prompt":"Die EU stellt Fördermittel zur Verfügung.","task":"Was bedeutet dieses FVG?","options":["Die EU fordert Geld.","Die EU stellt eine Frage.","Die EU stellt Mittel bereit.","Die EU hat Mittel beantragt."],"answer":2},{"type":"mc","prompt":"Das Unternehmen geriet in Schwierigkeiten.","task":"Bedeutung des FVG?","options":["Das Unternehmen macht Schwierigkeiten.","Das Unternehmen bekam Probleme.","Das Unternehmen löste Schwierigkeiten.","Das Unternehmen ignorierte Schwierigkeiten."],"answer":1},{"type":"mc","prompt":"Der Bericht stellt die bisherigen Ergebnisse in Frage.","task":"Was bedeutet das?","options":["Der Bericht beantwortet Fragen.","Der Bericht zweifelt die Ergebnisse an.","Der Bericht stellt Fragen zum Thema.","Der Bericht bestätigt die Ergebnisse."],"answer":1},{"type":"mc","prompt":"Die Expertengruppe kam zu dem Schluss, dass weitere Investitionen nötig sind.","task":"Bedeutung?","options":["Sie beendete den Schluss.","Sie schlussfolgerte, dass Investitionen nötig sind.","Sie lehnte Investitionen ab.","Sie kam an."],"answer":1},{"type":"mc","prompt":"Das neue Gesetz wurde gestern in Kraft gesetzt.","task":"Was bedeutet das FVG?","options":["Das Gesetz wurde diskutiert.","Das Gesetz trat in Kraft / wurde eingeführt.","Das Gesetz wurde abgeschafft.","Das Gesetz wurde geändert."],"answer":1},{"type":"mc","prompt":"Viele Studenten nehmen staatliche Förderung in Anspruch.","task":"Bedeutung?","options":["Sie beantragen Förderung.","Sie lehnen Förderung ab.","Sie nutzen staatliche Förderung.","Sie zahlen für Förderung."],"answer":2},{"type":"mc","prompt":"Die Innovationen kommen in vielen Bereichen zum Einsatz.","task":"Was bedeutet das?","options":["Die Innovationen beginnen.","Die Innovationen werden eingesetzt.","Die Innovationen werden diskutiert.","Die Innovationen kommen an."],"answer":1},{"type":"mc","prompt":"Seine Begeisterung kam deutlich zum Ausdruck.","task":"Bedeutung?","options":["Er drückte etwas aus.","Er war begeistert sichtbar.","Seine Begeisterung zeigte sich deutlich.","Er sprach sehr deutlich."],"answer":2},{"type":"mc","prompt":"Die Parteien kamen nach wochenlangen Verhandlungen zu einer Einigung.","task":"FVG-Bedeutung?","options":["Sie begannen zu verhandeln.","Sie einigten sich.","Sie beendeten die Verhandlungen ohne Ergebnis.","Sie kamen zu einem Treffen."],"answer":1},{"type":"mc","prompt":"Traditionelle Handwerksberufe geraten immer mehr in Vergessenheit.","task":"Was bedeutet das?","options":["Traditionelle Berufe werden erinnert.","Traditionelle Berufe werden wichtiger.","Traditionelle Berufe werden mehr und mehr vergessen.","Traditionelle Berufe erinnern an die Vergangenheit."],"answer":2},{"type":"mc","prompt":"Der Konzern nahm Abstand von seinen ursprünglichen Plänen.","task":"Bedeutung?","options":["Der Konzern bestand auf seinen Plänen.","Der Konzern hielt großen Abstand.","Der Konzern verzichtete auf seine ursprünglichen Pläne.","Der Konzern veröffentlichte seine Pläne."],"answer":2},{"type":"mc","prompt":"Die Unterlagen stehen ab sofort zur Verfügung.","task":"FVG-Bedeutung?","options":["Die Unterlagen stehen auf dem Tisch.","Die Unterlagen sind sofort verfügbar.","Die Unterlagen werden morgen verfügbar.","Die Unterlagen wurden eingereicht."],"answer":1},{"type":"mc","prompt":"Welcher Satz enthält ein Funktionsverbgefüge?","task":"","options":["Er arbeitet täglich an seinem Projekt.","Die Reform setzt neue Standards.","Die Regierung setzt die Reform in Gang.","Das Ergebnis überrascht alle."],"answer":2}],"2":[{"type":"mc","prompt":"in Gang setzen / bringen / kommen","task":"Was bedeuten diese drei FVG gemeinsam?","options":["beenden, abschließen","beginnen, starten, anlaufen","beschleunigen, intensivieren","aufhalten, stoppen"],"answer":1},{"type":"mc","prompt":"Welches FVG bedeutet „beantragen\"?","task":"","options":["einen Antrag stellen","eine Forderung stellen","in Frage stellen","unter Beweis stellen"],"answer":0},{"type":"mc","prompt":"zum Ausdruck bringen / kommen","task":"Der Unterschied zwischen diesen beiden FVG?","options":["bringen = aktiv zeigen; kommen = passiv sichtbar werden","bringen = passiv; kommen = aktiv","beide bedeuten dasselbe","bringen = sprechen; kommen = schreiben"],"answer":0},{"type":"mc","prompt":"Was bedeutet „unter Druck geraten/stehen/setzen\"?","task":"Welche Aussage ist FALSCH?","options":["geraten = Druck bekommen (plötzlich)","stehen = Druck haben (dauerhaft)","setzen = jemandem Druck machen (aktiv)","setzen = Druck verlieren"],"answer":3},{"type":"mc","prompt":"Welches FVG passt zu „berücksichtigen\"?","task":"","options":["in Anspruch nehmen","Rücksicht nehmen auf","Abstand nehmen von","Bezug nehmen auf"],"answer":1},{"type":"mc","prompt":"zur Verfügung stellen vs. zur Verfügung stehen","task":"Was ist der Unterschied?","options":["stellen = aktiv bereitstellen; stehen = verfügbar sein (Zustand)","stellen = verfügbar sein; stehen = aktiv bereitstellen","beide sind identisch","stellen = formal; stehen = informal"],"answer":0},{"type":"mc","prompt":"in Vergessenheit geraten","task":"In welchem Kontext passt dieses FVG am besten?","options":["Neue Technologie wird entwickelt.","Alte Traditionen werden nicht mehr gepflegt.","Jemand vergisst seinen Termin.","Ein Problem wird nicht gelöst."],"answer":1},{"type":"mc","prompt":"Welches FVG bedeutet „sich beziehen auf\"?","task":"","options":["Rücksicht nehmen auf","Bezug nehmen auf","Einfluss nehmen auf","Abstand nehmen von"],"answer":1},{"type":"mc","prompt":"zum Tragen kommen","task":"Was bedeutet dieses FVG?","options":["etwas tragen müssen","wirksam werden, Auswirkung haben","zum Schluss kommen","sich um etwas kümmern"],"answer":1},{"type":"mc","prompt":"einen Beitrag leisten","task":"Das FVG bedeutet:","options":["zahlen","beitragen, helfen, mitwirken","antreten","einreichen"],"answer":1},{"type":"mc","prompt":"Welches FVG bedeutet „beweisen, zeigen\"?","task":"","options":["in Gang setzen","in Frage stellen","unter Beweis stellen","in Kraft setzen"],"answer":2},{"type":"mc","prompt":"Welches FVG gehört NICHT zur Gruppe mit „Beginn/Start\"?","task":"","options":["in Gang kommen","in Gang bringen","in Gang setzen","in Vergessenheit geraten"],"answer":3},{"type":"mc","prompt":"im Vordergrund stehen","task":"Was bedeutet das?","options":["vor jemandem stehen","wichtig/zentral sein","am Anfang stehen","sichtbar sein"],"answer":1}],"3":[{"type":"fill","prompt":"Die Regierung hat wichtige ___ ergriffen, um die Krise zu bewältigen.","task":"Ergänze das fehlende Nomen:","answer":"Maßnahmen","hint":"Maßnahmen ergreifen = handeln, etwas tun"},{"type":"fill","prompt":"Der neue Vorsitzende nahm ___ auf die Interessen der Minderheiten.","task":"Ergänze das Nomen (+ Präposition):","answer":"Rücksicht","hint":"Rücksicht nehmen auf = berücksichtigen"},{"type":"fill","prompt":"Die Parteien kamen nach langen Gesprächen zu einer ___.","task":"Ergänze das Nomen:","answer":"Einigung","hint":"zu einer Einigung kommen = sich einigen"},{"type":"fill","prompt":"Das Projekt geriet durch fehlende Mittel in ___.","task":"Ergänze das Nomen:","answer":"Schwierigkeiten","hint":"in Schwierigkeiten geraten = Probleme bekommen"},{"type":"fill","prompt":"Die EU stellt den Mitgliedsstaaten Fördermittel zur ___.","task":"Ergänze das Nomen:","answer":"Verfügung","hint":"zur Verfügung stellen = bereitstellen"},{"type":"fill","prompt":"Das neue Gesetz tritt in ___ — ab nächsten Monat gilt es.","task":"Ergänze das Nomen:","answer":"Kraft","hint":"in Kraft treten/setzen = rechtsgültig werden"},{"type":"fill","prompt":"Die Studie stellte die Ergebnisse der Vorgängerstudie in ___.","task":"Ergänze das Nomen:","answer":"Frage","hint":"in Frage stellen = anzweifeln"},{"type":"fill","prompt":"Viele Bürger nehmen Sozialleistungen in ___.","task":"Ergänze das Nomen:","answer":"Anspruch","hint":"in Anspruch nehmen = nutzen, beanspruchen"},{"type":"fill","prompt":"Die Expertenkommission kam zu dem ___, dass sofortiges Handeln nötig ist.","task":"Ergänze das Nomen:","answer":"Schluss","hint":"zu dem Schluss kommen = schlussfolgern"},{"type":"fill","prompt":"Die neuen Technologien kommen in immer mehr Bereichen zum ___.","task":"Ergänze das Nomen:","answer":"Einsatz","hint":"zum Einsatz kommen = eingesetzt werden"},{"type":"fill","prompt":"Die Politikerin nahm in ihrer Rede ___ auf die aktuellen Ereignisse.","task":"Ergänze das Nomen:","answer":"Bezug","hint":"Bezug nehmen auf = sich beziehen auf"},{"type":"fill","prompt":"Viele alte Handwerkstechniken geraten allmählich in ___.","task":"Ergänze das Nomen:","answer":"Vergessenheit","hint":"in Vergessenheit geraten = vergessen werden"},{"type":"fill","prompt":"Die Firma nahm ___ von ihren ursprünglichen Expansionsplänen.","task":"Ergänze das Nomen:","answer":"Abstand","hint":"Abstand nehmen von = verzichten auf, aufgeben"}],"4":[{"type":"mc","prompt":"entscheiden → ___","task":"Welches FVG entspricht dem einfachen Verb?","options":["eine Einigung treffen","eine Entscheidung treffen","einen Beschluss fassen","eine Forderung stellen"],"answer":1},{"type":"mc","prompt":"bezweifeln → ___","task":"","options":["in Frage stellen","unter Beweis stellen","in Kraft setzen","in Gang bringen"],"answer":0},{"type":"mc","prompt":"„Die Behörde hat die neuen Vorschriften eingeführt.\" Umformung mit FVG?","task":"","options":["Die Behörde hat die Vorschriften in Kraft gesetzt.","Die Behörde hat die Vorschriften in Gang gebracht.","Die Behörde hat die Vorschriften in Frage gestellt.","Die Behörde hat die Vorschriften zur Verfügung gestellt."],"answer":0},{"type":"mc","prompt":"„Viele Berufe werden vergessen.\" → FVG?","task":"","options":["Viele Berufe kommen in Vergessenheit.","Viele Berufe geraten in Vergessenheit.","Viele Berufe bringen sich in Vergessenheit.","Viele Berufe setzen sich in Vergessenheit."],"answer":1},{"type":"mc","prompt":"„Die Wissenschaftler schlussfolgerten, dass …\" → FVG?","task":"","options":["Die Wissenschaftler kamen zu einer Einigung, dass …","Die Wissenschaftler kamen zu dem Schluss, dass …","Die Wissenschaftler brachten zum Ausdruck, dass …","Die Wissenschaftler setzten voraus, dass …"],"answer":1},{"type":"mc","prompt":"„Das Team wird unter Druck gesetzt.\" → Aktiv?","task":"","options":["Jemand drückt das Team.","Jemand setzt das Team unter Druck.","Das Team setzt Druck.","Jemand bringt das Team unter Druck."],"answer":1},{"type":"mc","prompt":"bereitstellen → ___","task":"FVG-Entsprechung:","options":["zur Verfügung stehen","zur Verfügung stellen","zur Verfügung kommen","zur Verfügung bringen"],"answer":1},{"type":"mc","prompt":"„Die neuen Methoden werden jetzt angewendet.\" → FVG (passiv)?","task":"","options":["Die Methoden kommen jetzt zum Einsatz.","Die Methoden bringen sich zum Einsatz.","Die Methoden setzen sich in Gang.","Die Methoden stellen sich zur Verfügung."],"answer":0},{"type":"mc","prompt":"„Wir nutzen staatliche Unterstützung.\" → FVG?","task":"","options":["Wir nehmen staatliche Unterstützung in Anspruch.","Wir nehmen Rücksicht auf staatliche Unterstützung.","Wir nehmen Abstand von staatlicher Unterstützung.","Wir nehmen Bezug auf staatliche Unterstützung."],"answer":0},{"type":"mc","prompt":"„Seine Traurigkeit zeigte sich in seiner Stimme.\" → FVG?","task":"","options":["Seine Traurigkeit geriet in seiner Stimme zum Ausdruck.","Seine Traurigkeit kam in seiner Stimme zum Ausdruck.","Seine Traurigkeit brachte sich in seiner Stimme zum Ausdruck.","Seine Traurigkeit setzte in seiner Stimme ein."],"answer":1},{"type":"mc","prompt":"anfangen / starten → ___","task":"Welches FVG passt NICHT?","options":["in Gang kommen","in Gang setzen","in Gang bringen","in Frage stellen"],"answer":3},{"type":"mc","prompt":"„Das Unternehmen beeinflusst die Medienlandschaft.\" → FVG?","task":"","options":["Das Unternehmen nimmt Einfluss auf die Medienlandschaft.","Das Unternehmen nimmt Rücksicht auf die Medienlandschaft.","Das Unternehmen nimmt Bezug auf die Medienlandschaft.","Das Unternehmen nimmt Abstand von der Medienlandschaft."],"answer":0},{"type":"mc","prompt":"„Der Stress wirkt sich aus auf das Ergebnis.\" → FVG?","task":"","options":["Der Stress kommt in Verbindung.","Der Stress kommt mit dem Ergebnis in Gang.","Der Stress kommt beim Ergebnis zum Tragen.","Der Stress gerät in Verbindung."],"answer":2}],"5":[{"type":"mc","prompt":"Welcher Satz klingt am formalsten für eine C1-Stellungnahme?","task":"Thema: neue Technologien","options":["Wir fangen an, neue Technologien zu nutzen.","Neue Technologien werden immer wichtiger.","Neue Technologien kommen in immer mehr Bereichen zum Einsatz.","Man benutzt heutzutage viele neue Technologien."],"answer":2},{"type":"fill","prompt":"Vervollständige den C1-Satz: „Die Forschungsergebnisse stellen die gängige Theorie ___.\"","task":"FVG mit „in Frage\":","answer":"in Frage","hint":"in Frage stellen = anzweifeln"},{"type":"mc","prompt":"Welcher Satz enthält ein FALSCH verwendetes FVG?","task":"","options":["Das Gesetz wurde in Kraft gesetzt.","Die Experten kamen zu einer Einigung.","Das Unternehmen geriet in Vergessenheit die Strategie.","Der Redner nahm Bezug auf frühere Studien."],"answer":2},{"type":"fill","prompt":"C1-Schreiben: „Beide Unternehmen ___ nach langen Verhandlungen zu einer Einigung.\"","task":"Setze das richtige Verb ein:","answer":"kamen","hint":"zu einer Einigung kommen — Verb im Präteritum: kamen"},{"type":"mc","prompt":"In welchem Kontext würde man „unter Druck geraten\" verwenden?","task":"","options":["Eine Firma beschleunigt ihre Produktion.","Eine Regierung verliert an Stabilität durch Krisen.","Ein Team erzielt einen großen Erfolg.","Ein Projekt wird erfolgreich abgeschlossen."],"answer":1},{"type":"fill","prompt":"C1-Bericht: „Viele regionale Dialekte ___ zunehmend in ___.\"","task":"Ergänze FVG (zwei Wörter):","answer":"geraten in Vergessenheit","hint":"in Vergessenheit geraten — Präsens: geraten"},{"type":"mc","prompt":"Welcher Satz verwendet ein FVG im Passiv korrekt?","task":"","options":["Die Reform wird in Gang gestellt.","Die Reform wurde in Kraft gesetzt.","Die Reform ist in Frage gebracht worden von alleine.","Die Reform kommt unter Beweis gestellt."],"answer":1},{"type":"mc","prompt":"Wähle das FVG, das in einem Bewerbungsschreiben am besten passt:","task":"„Ich ___ meine Kompetenz bereits in mehreren Projekten ___ .\"","options":["brachte … zum Einsatz","stellte … unter Beweis","geriet … in Gang","kam … in Frage"],"answer":1},{"type":"fill","prompt":"Ergänze sinnvoll: „Der neue Direktor ___ sofort wichtige Reformen ___ Gang.\"","task":"FVG mit „in Gang bringen\" (Präteritum):","answer":"brachte in","hint":"in Gang bringen → brachte … in Gang (Verb am Ende)"},{"type":"mc","prompt":"In welchem Satz wird das FVG KORREKT und C1-angemessen verwendet?","task":"","options":["Das Projekt steht zur Verfügung, weil es verfügbar ist.","Die Daten stehen für alle Forscher zur Verfügung.","Wir stellen die Ressourcen in die Verfügung.","Die Materialien zur Verfügung kommen von der EU."],"answer":1},{"type":"fill","prompt":"In der Analyse: „Die wirtschaftliche Entwicklung ___ in engem Zusammenhang ___ politischen Reformen.\"","task":"FVG mit stehen + Präposition:","answer":"steht im Zusammenhang mit","hint":"im Zusammenhang stehen mit (Präsens: steht)"},{"type":"mc","prompt":"Welcher Satz enthält das passende FVG für den Kontext: „Die Stadtverwaltung veröffentlicht neue Pläne — jeder kann sie einsehen\"?","task":"","options":["Die Pläne stehen zur Verfügung.","Die Pläne kommen in Gang.","Die Pläne stehen in Frage.","Die Pläne bringen sich zum Ausdruck."],"answer":0},{"type":"mc","prompt":"Formuliere den formellsten Satz für: „Die Regierung zweifelt an den offiziellen Daten.\"","task":"","options":["Die Regierung fragt nach den Daten.","Die Regierung stellt die offiziellen Daten in Frage.","Die Regierung kommt zu einem Schluss über die Daten.","Die Regierung bringt die Daten zum Vorschein."],"answer":1}]},"examples":[{"de":"Die Regierung hat Maßnahmen ergriffen, um die Krise zu bewältigen.","vi":"Chính phủ đã tiến hành các biện pháp để vượt qua cuộc khủng hoảng.","phrase":"Maßnahmen ergriffen","note":"FVG: Maßnahmen ergreifen = Maßnahmen durchführen"},{"de":"Das Projekt steht zur Verfügung — alle Daten sind abrufbar.","vi":"Dự án có sẵn — tất cả dữ liệu đều có thể truy cập.","phrase":"steht zur Verfügung","note":"FVG: zur Verfügung stehen = verfügbar sein"},{"de":"Die neue Technologie stellt die bisherigen Methoden in Frage.","vi":"Công nghệ mới đặt ra câu hỏi về các phương pháp hiện tại.","phrase":"stellt die bisherigen Methoden in Frage","note":"FVG: in Frage stellen = anzweifeln, hinterfragen"},{"de":"Die Verhandlungen kommen in Gang — erste Einigungen sind erzielt worden.","vi":"Các cuộc đàm phán đang bắt đầu tiến triển — đã đạt được những thỏa thuận đầu tiên.","phrase":"kommen in Gang","note":"FVG: in Gang kommen = beginnen, anlaufen"},{"de":"Die neuen Erkenntnisse stellen die bisherige Theorie in Frage.","vi":"Những phát hiện mới đặt ra câu hỏi về lý thuyết hiện tại.","phrase":"stellen die bisherige Theorie in Frage","note":null},{"de":"Das Ministerium stellt Ressourcen zur Verfügung, um die Forschung zu fördern.","vi":"Bộ cung cấp nguồn lực để thúc đẩy nghiên cứu.","phrase":"stellt Ressourcen zur Verfügung","note":null},{"de":"Der Skandal brachte verborgene Probleme zum Vorschein.","vi":"Vụ bê bối đã đưa những vấn đề tiềm ẩn ra ánh sáng.","phrase":"brachte verborgene Probleme zum Vorschein","note":null},{"de":"Nach langen Verhandlungen kamen die Parteien zu einer Einigung.","vi":"Sau những cuộc đàm phán dài, các bên đã đạt được thỏa thuận.","phrase":"kamen die Parteien zu einer Einigung","note":null},{"de":"Die Expertenkommission kam zu dem Schluss, dass weitere Reformen notwendig sind.","vi":"Ủy ban chuyên gia kết luận rằng cần có thêm cải cách.","phrase":"kam zu dem Schluss","note":null},{"de":"Durch die Wirtschaftskrise gerieten viele Betriebe in Schwierigkeiten.","vi":"Do khủng hoảng kinh tế, nhiều doanh nghiệp rơi vào khó khăn.","phrase":"gerieten viele Betriebe in Schwierigkeiten","note":null},{"de":"Traditionelle Handwerkskünste geraten immer mehr in Vergessenheit.","vi":"Nghề thủ công truyền thống ngày càng bị lãng quên.","phrase":"geraten immer mehr in Vergessenheit","note":null},{"de":"Immer mehr Menschen nehmen professionelle Beratung in Anspruch.","vi":"Ngày càng nhiều người sử dụng dịch vụ tư vấn chuyên nghiệp.","phrase":"nehmen professionelle Beratung in Anspruch","note":null},{"de":"Das neue Gesetz tritt in Kraft — es wurde gestern offiziell in Kraft gesetzt.","vi":"Luật mới có hiệu lực — nó đã chính thức được ban hành hôm qua.","phrase":"in Kraft gesetzt","note":null},{"de":"Die Unterlagen stehen ab sofort zur Verfügung.","vi":"Các tài liệu có thể sử dụng ngay từ bây giờ.","phrase":"stehen ab sofort zur Verfügung","note":null},{"de":"Die Löhne stehen im Zusammenhang mit der allgemeinen wirtschaftlichen Lage.","vi":"Mức lương có liên quan đến tình hình kinh tế chung.","phrase":"stehen im Zusammenhang mit","note":null}]},{"id":"wortbildung","title":"Wortbildung","tag":"Wortschatz","desc":"Suffixe (-ung, -heit, -bar), Verbpräfixe (ver-, ent-, be-), Lückentext C1","levels":{"1":[{"type":"mc","prompt":"Welches Suffix bildet immer ein Femininum (die)?","task":"","options":["-ling","-tum","-ung","-er"],"answer":2},{"type":"mc","prompt":"Freiheit, Gesundheit, Sicherheit","task":"Welches Suffix steckt in diesen Wörtern?","options":["-keit","-heit","-schaft","-tum"],"answer":1},{"type":"mc","prompt":"Möglichkeit, Fähigkeit, Selbstständigkeit","task":"Welches Suffix?","options":["-heit","-schaft","-keit","-ung"],"answer":2},{"type":"mc","prompt":"Welches Genus hat ein Wort mit dem Suffix -schaft?","task":"","options":["das (Neutrum)","der (Maskulinum)","die (Femininum)","variiert"],"answer":2},{"type":"mc","prompt":"Erlebnis, Erkenntnis, Versäumnis","task":"Welches Suffix und welches Genus?","options":["-nis, die","-nis, das","-nis, der","-tum, das"],"answer":1},{"type":"mc","prompt":"Wissenschaftler, Politiker, Forscher","task":"Welches Suffix und welches Genus?","options":["-er, der","-er, die","-ling, der","-ler, das"],"answer":0},{"type":"mc","prompt":"Lehrling, Prüfling, Flüchtling","task":"Welches Suffix und welches Genus?","options":["-ling, die","-ling, der","-ling, das","-ung, der"],"answer":1},{"type":"mc","prompt":"Welches Suffix macht aus einem Adjektiv ein Nomen (Eigenschaft)?","task":"z.B. schnell → Schnelligkeit","options":["-heit / -keit","-schaft","-tum","-ling"],"answer":0},{"type":"mc","prompt":"Integration, Kommunikation, Motivation","task":"Welches Suffix?","options":["-tion / -ion","-heit","-schaft","-ung"],"answer":0},{"type":"mc","prompt":"Produktivität, Kreativität, Flexibilität","task":"Welches Suffix und Genus?","options":["-ität, die","-ität, das","-heit, die","-keit, die"],"answer":0},{"type":"mc","prompt":"Welches Wort passt NICHT zur Gruppe (falsches Suffix/Genus)?","task":"","options":["die Entwicklung","die Entscheidung","das Entscheidung","die Vorbereitung"],"answer":2},{"type":"mc","prompt":"aus welchem Verb kommt „die Entlassung\"?","task":"","options":["entlassen","lassen","zulassen","verlassen"],"answer":0},{"type":"mc","prompt":"Welches Wort hat das Suffix -sam?","task":"","options":["mühsam","mühelos","mühevoll","mühig"],"answer":0}],"2":[{"type":"fill","prompt":"entwickeln → die ___","task":"Bilde das Nomen mit -ung:","answer":"Entwicklung","hint":"Verb + -ung → Femininum"},{"type":"fill","prompt":"entscheiden → die ___","task":"Bilde das Nomen mit -ung:","answer":"Entscheidung","hint":"entscheid- + -ung"},{"type":"fill","prompt":"möglich → die ___","task":"Bilde das Nomen mit -keit:","answer":"Möglichkeit","hint":"-lich → -lichkeit"},{"type":"fill","prompt":"fähig → die ___","task":"Bilde das Nomen mit -keit:","answer":"Fähigkeit","hint":"fähig + -keit"},{"type":"fill","prompt":"frei → die ___","task":"Bilde das Nomen mit -heit:","answer":"Freiheit","hint":"frei + -heit"},{"type":"fill","prompt":"erkennen → die ___","task":"Bilde das Nomen mit -nis:","answer":"Erkenntnis","hint":"erkenn- + -tnis (Umlaut!)"},{"type":"fill","prompt":"erleben → das ___","task":"Bilde das Nomen mit -nis:","answer":"Erlebnis","hint":"erleb- + -nis"},{"type":"fill","prompt":"selbstständig → die ___","task":"Bilde das Nomen mit -keit:","answer":"Selbstständigkeit","hint":"selbstständig + -keit"},{"type":"fill","prompt":"vorbereiten → die ___","task":"Bilde das Nomen mit -ung:","answer":"Vorbereitung","hint":"vorbereiten → Vorbereitung"},{"type":"fill","prompt":"kommunizieren → die ___","task":"Bilde das Nomen mit -tion:","answer":"Kommunikation","hint":"kommunizier- → Kommunikation (Fremdwort)"},{"type":"fill","prompt":"kreativ → die ___","task":"Bilde das Nomen mit -ität:","answer":"Kreativität","hint":"kreativ + -ität"},{"type":"fill","prompt":"wachsen → das ___","task":"Bilde das Nomen mit -tum:","answer":"Wachstum","hint":"wachs- + -tum → Neutrum"},{"type":"fill","prompt":"wissenschaftlich → der ___","task":"Bilde das Personennomen mit -ler:","answer":"Wissenschaftler","hint":"Wissenschaft + -ler → Maskulinum"}],"3":[{"type":"fill","prompt":"lösen → das Problem ist ___","task":"Bilde das Adjektiv mit -bar:","answer":"lösbar","hint":"lös- + -bar = kann gelöst werden"},{"type":"fill","prompt":"bezahlen → die Wohnung ist ___","task":"Bilde das Adjektiv mit -bar:","answer":"bezahlbar","hint":"bezahl- + -bar"},{"type":"fill","prompt":"freundlich → das Gegenteil (un-):","task":"","answer":"unfreundlich","hint":"un- + freundlich"},{"type":"fill","prompt":"möglich → das Gegenteil:","task":"Bilde das Adjektiv mit un-:","answer":"unmöglich","hint":"un- + möglich"},{"type":"fill","prompt":"die Hoffnung → ohne Hoffnung → ___","task":"Bilde das Adjektiv mit -los:","answer":"hoffnungslos","hint":"Hoffnung + s + -los"},{"type":"fill","prompt":"die Arbeit → ohne Arbeit → ___","task":"Bilde das Adjektiv mit -los:","answer":"arbeitslos","hint":"Arbeit + s + -los"},{"type":"fill","prompt":"der Fehler → voller Fehler → ___","task":"Bilde das Adjektiv mit -haft:","answer":"fehlerhaft","hint":"Fehler + -haft"},{"type":"fill","prompt":"sparen → gerne sparen → ___","task":"Bilde das Adjektiv mit -sam:","answer":"sparsam","hint":"spar- + -sam"},{"type":"fill","prompt":"der Monat → jeden Monat → ___","task":"Bilde das Adjektiv mit -lich:","answer":"monatlich","hint":"Monat + -lich"},{"type":"fill","prompt":"die Technik → zur Technik gehörend → ___","task":"Bilde das Adjektiv mit -isch:","answer":"technisch","hint":"Technik → technisch (-k fällt weg, +isch)"},{"type":"fill","prompt":"nutzen → kann genutzt werden → ___","task":"Bilde das Adjektiv mit -bar:","answer":"nutzbar","hint":"nutz- + -bar"},{"type":"fill","prompt":"wirken → eine Wirkung haben → ___","task":"Bilde das Adjektiv mit -sam:","answer":"wirksam","hint":"wirk- + -sam"},{"type":"fill","prompt":"verantwortlich → das Gegenteil:","task":"","answer":"unverantwortlich","hint":"un- + verantwortlich"}],"4":[{"type":"mc","prompt":"kaufen → ___kaufen (verkaufen / etwas für Geld weggeben)","task":"Welches Präfix?","options":["be-","ver-","er-","ent-"],"answer":1},{"type":"mc","prompt":"stehen → ___stehen (aus etwas entstehen)","task":"Welches Präfix?","options":["be-","ver-","ent-","zer-"],"answer":2},{"type":"mc","prompt":"brechen → ___brechen (in Stücke gehen)","task":"Welches Präfix?","options":["be-","miss-","zer-","über-"],"answer":2},{"type":"mc","prompt":"stehen → ___stehen (etwas nicht richtig verstehen)","task":"","options":["ver-","miss-","ent-","be-"],"answer":1},{"type":"mc","prompt":"reichen → ___reichen (ein Ziel erreichen)","task":"","options":["ver-","be-","er-","ent-"],"answer":2},{"type":"mc","prompt":"arbeiten → ___arbeiten (an etwas arbeiten, bearbeiten)","task":"","options":["er-","be-","ver-","ent-"],"answer":1},{"type":"mc","prompt":"schätzen → ___schätzen (zu niedrig einschätzen)","task":"","options":["be-","über-","unter-","ver-"],"answer":3},{"type":"mc","prompt":"stützen → ___stützen (helfen, fördern)","task":"","options":["unter-","über-","be-","er-"],"answer":0},{"type":"mc","prompt":"wickeln → ent___wickeln (entstehen lassen)","task":"Was ist das fertige Wort?","options":["entwickeln","bewickeln","erwickeln","verwickeln"],"answer":0},{"type":"mc","prompt":"Was bedeutet „übernehmen\"?","task":"","options":["zu viel nehmen","etwas von jemandem übertragen bekommen","unter etwas nehmen","etwas entfernen"],"answer":1},{"type":"mc","prompt":"Was ist der Unterschied zwischen „verbessern\" und „bessern\"?","task":"","options":["kein Unterschied","verbessern = schrittweise; bessern = sofort","verbessern betont den Prozess/Ergebnis; beide bedeuten besser machen","verbessern = falsch machen; bessern = richtig machen"],"answer":2},{"type":"mc","prompt":"„missbrauchen\" bedeutet:","task":"","options":["falsch gebrauchen / für falschen Zweck nutzen","nicht gebrauchen","zu viel gebrauchen","unterhalb gebrauchen"],"answer":0},{"type":"mc","prompt":"Welches Präfix passt zu „zeugen → ___zeugen\" (jemanden überzeugen)?","task":"","options":["be-","unter-","über-","er-"],"answer":2}],"5":[{"type":"fill","prompt":"Die ___ (entwickeln) erneuerbarer Energien ist eine globale Priorität.","task":"Bilde das Nomen:","answer":"Entwicklung","hint":"entwickeln → die Entwicklung (-ung)"},{"type":"fill","prompt":"Der Mangel an ___ (fähig) Arbeitskräften ist ein ernstes Problem.","task":"Bilde das Nomen:","answer":"Fähigkeit","hint":"fähig → die Fähigkeit (-keit)"},{"type":"fill","prompt":"Die neue Regelung ist kaum ___ (verstehen).","task":"Bilde das Adjektiv:","answer":"verständlich","hint":"Variante von -bar/-lich: verständlich (nicht verstehbar)"},{"type":"fill","prompt":"Viele Jugendliche sind nach dem Schulabschluss ___ (Arbeit, ohne).","task":"Bilde das Adjektiv:","answer":"arbeitslos","hint":"Arbeit + -los"},{"type":"fill","prompt":"Die ___ (selbstständig) im Beruf wird immer wichtiger.","task":"Bilde das Nomen:","answer":"Selbstständigkeit","hint":"selbstständig → die Selbstständigkeit"},{"type":"fill","prompt":"Das Projekt scheiterte durch ___ (managen) des Teams.","task":"Bilde das Nomen (Verb → Nomen):","answer":"Missmanagement","hint":"miss- + Management (Fremdwort)"},{"type":"fill","prompt":"Die Idee ist kreativ, aber leider nicht ___ (machen).","task":"Bilde das Adjektiv:","answer":"machbar","hint":"mach- + -bar = kann gemacht werden"},{"type":"fill","prompt":"Es ist ___ (möglich, Negation), diese Aufgabe in einem Tag zu lösen.","task":"Bilde das Adjektiv:","answer":"unmöglich","hint":"un- + möglich"},{"type":"fill","prompt":"Die ___ (vorbereiten) auf die Prüfung dauerte mehrere Wochen.","task":"Bilde das Nomen:","answer":"Vorbereitung","hint":"vorbereiten → die Vorbereitung (-ung)"},{"type":"fill","prompt":"Seine Vorschläge wurden als ___ (Fehler, voller) bezeichnet.","task":"Bilde das Adjektiv:","answer":"fehlerhaft","hint":"Fehler + -haft = voller Fehler"},{"type":"fill","prompt":"Die Maßnahmen erwiesen sich als wenig ___ (wirken).","task":"Bilde das Adjektiv:","answer":"wirksam","hint":"wirk- + -sam = eine Wirkung habend"},{"type":"fill","prompt":"Die ___ (integrieren) von Migranten in den Arbeitsmarkt ist wichtig.","task":"Bilde das Nomen:","answer":"Integration","hint":"integrieren → die Integration (-tion)"},{"type":"fill","prompt":"Die Daten stehen ___ (kostenlos/frei) zur Verfügung.","task":"Bilde das Adjektiv:","answer":"kostenlos","hint":"Kosten + -los = ohne Kosten"}]},"examples":[]},{"id":"modalpartikeln","title":"Modalpartikeln","tag":"Sprechen · Hören","desc":"doch, ja, wohl, eigentlich, halt, eben, denn, mal, bloß — Nuancen im Hören","levels":{"1":[{"type":"mc","prompt":"\"Das ist ja interessant!\"","task":"Was drückt \"ja\" hier aus?","options":["Warnung","Überraschung / positives Staunen","Widerspruch","Vermutung"],"answer":1},{"type":"mc","prompt":"\"Er ist wohl krank.\"","task":"Was drückt \"wohl\" aus?","options":["Sicherheit","Warnung","Vermutung / Unsicherheit des Sprechers","Resignation"],"answer":2},{"type":"mc","prompt":"\"Das ist halt so.\"","task":"Was bedeutet \"halt\" hier?","options":["Stopp / Befehl","Es ist so — man kann es nicht ändern (Unvermeidbarkeit)","Überraschung","Widerspruch"],"answer":1},{"type":"mc","prompt":"\"Komm doch rein!\"","task":"Was drückt \"doch\" im Imperativ aus?","options":["Widerspruch / Ablehnung","Drohung","Milde freundliche Einladung / Aufforderung","Resignation"],"answer":2},{"type":"mc","prompt":"\"Was machst du denn hier?\"","task":"Welche Nuance hat \"denn\" in dieser Frage?","options":["Vorwurf und Ärger","Freundliche Neugier / Interesse","Warnton","Drohung"],"answer":1},{"type":"mc","prompt":"\"Mach das ja nicht!\"","task":"Was bedeutet \"ja\" im Imperativ?","options":["Selbstverständlichkeit","Überraschung","Ernste Warnung / Drohung","Einladung"],"answer":2},{"type":"mc","prompt":"\"Kannst du mal kurz helfen?\"","task":"Was bewirkt \"mal\" hier?","options":["Machtdemonstration","Abschwächung — macht die Bitte höflicher und freundlicher","Drohung","Resignation"],"answer":1},{"type":"mc","prompt":"\"Ich wollte eigentlich früher gehen.\"","task":"Was drückt \"eigentlich\" aus?","options":["Überraschung","Einschränkung — aber etwas kam dazwischen","Widerspruch","Warnung"],"answer":1},{"type":"mc","prompt":"\"Tu das bloß nicht!\"","task":"Was bedeutet \"bloß\" im Imperativ?","options":["Einladung","Milde Bitte","Ernste Warnung / Drohung","Resignation"],"answer":2},{"type":"mc","prompt":"\"Das ist eben das Problem.\"","task":"Was drückt \"eben\" aus?","options":["Überraschung","Genau das ist der Kern — Bestätigung / Konsequenz","Freundliche Neugier","Milde Aufforderung"],"answer":1},{"type":"mc","prompt":"\"Du weißt doch, dass das verboten ist.\"","task":"Was bedeutet \"doch\" hier?","options":["Widerspruch","Erinnerung an etwas Bekanntes","Vermutung","Resignation"],"answer":1},{"type":"mc","prompt":"\"Wenn das nur gut geht!\"","task":"Was drückt \"nur\" aus?","options":["Warnung","Bedingung","Wunsch / Sorge des Sprechers","Freundliche Frage"],"answer":2},{"type":"mc","prompt":"\"Was machst du eigentlich beruflich?\"","task":"Welche Nuance hat \"eigentlich\" in dieser Frage?","options":["Vorwurf","Beiläufige, neugierige Nachfrage","Widerspruch","Resignation"],"answer":1}],"2":[{"type":"mc","prompt":"Jemand sagt etwas Falsches über dich. Du antwortest empört:","task":"Welche Partikel passt?","options":["\"Das ist wohl nicht wahr!\"","\"Das stimmt doch nicht!\"","\"Das ist mal nicht wahr!\"","\"Das ist denn falsch!\""],"answer":1},{"type":"mc","prompt":"Dein Freund kommt zu spät. Du sagst genervt:","task":"","options":["\"Komm doch endlich!\"","\"Komm wohl!\"","\"Komm mal nicht!\"","\"Komm denn her!\""],"answer":0},{"type":"mc","prompt":"Du siehst jemanden, den du nicht erwartet hast. Du sagst:","task":"","options":["\"Das ist halt überraschend.\"","\"Was machst du denn hier?\"","\"Du bist wohl hier.\"","\"Du bist ja hier!\""],"answer":1},{"type":"mc","prompt":"Du vermutest, dass dein Kollege krank ist (aber bist nicht sicher):","task":"","options":["\"Er ist doch krank.\"","\"Er ist ja krank.\"","\"Er ist wohl krank.\"","\"Er ist halt krank.\""],"answer":2},{"type":"mc","prompt":"Du bittest jemanden höflich, etwas zu reichen:","task":"","options":["\"Gib mir das ja!\"","\"Gib mir das bloß!\"","\"Reich mir das mal!\"","\"Reich mir das doch wohl.\""],"answer":2},{"type":"mc","prompt":"Du erinnerst jemanden an eine bekannte Information:","task":"","options":["\"Du weißt wohl, dass …\"","\"Du weißt doch, dass …\"","\"Du weißt denn, dass …\"","\"Du weißt mal, dass …\""],"answer":1},{"type":"mc","prompt":"Jemand beschwert sich über etwas Unvermeidbares. Du antwortest resigniert:","task":"","options":["\"Das ist doch so.\"","\"Das ist ja so.\"","\"Das ist halt so.\"","\"Das ist denn so.\""],"answer":2},{"type":"mc","prompt":"Du bist besorgt, ob etwas gut ausgeht:","task":"","options":["\"Wenn das doch gut geht!\"","\"Wenn das nur gut geht!\"","\"Wenn das eben gut geht!\"","\"Wenn das mal gut geht!\""],"answer":1},{"type":"mc","prompt":"Jemand fragt dich beiläufig nach deinem Job. Welche Partikel klingt am natürlichsten?","task":"\"Was machst du ___ beruflich?\"","options":["ja","doch","eigentlich","wohl"],"answer":2},{"type":"mc","prompt":"Du siehst etwas Erstaunliches und reagierst positiv überrascht:","task":"\"Das ist ___ toll!\"","options":["doch","wohl","halt","ja"],"answer":3},{"type":"mc","prompt":"Du warnst jemanden sehr ernst:","task":"\"Komm ___ nicht zu spät!\"","options":["denn","wohl","bloß","mal"],"answer":2},{"type":"mc","prompt":"Du erklärst eine Situation als logische Konsequenz:","task":"\"Das ist ___ das Ergebnis der Entscheidung.\"","options":["mal","denn","eben","bloß"],"answer":2},{"type":"mc","prompt":"Du drückst aus, dass etwas selbstverständlich und allen bekannt ist:","task":"\"Er ist ___ bekannt für seine Arbeit.\"","options":["wohl","ja","halt","denn"],"answer":1}],"3":[{"type":"mc","prompt":"\"Wenn ich nur mehr Zeit hätte!\"","task":"In welchem Satzmodus steht \"nur\" hier?","options":["Imperativsatz","Wunschsatz mit Konjunktiv II","Fragesatz","Aussagesatz"],"answer":1},{"type":"mc","prompt":"Welche Partikel passt NUR in Fragesätze?","task":"","options":["ja","wohl","denn","eben"],"answer":2},{"type":"mc","prompt":"Welcher Satz ist FALSCH (Partikel im falschen Satztyp)?","task":"","options":["Das ist doch merkwürdig.","Er ist wohl müde.","Komm denn her!","Was machst du denn?"],"answer":2},{"type":"mc","prompt":"\"Mach ja keine Fehler!\"","task":"In welchem Satzmodus steht \"ja\" hier?","options":["Aussagesatz","Fragesatz","Imperativsatz","Wunschsatz"],"answer":2},{"type":"mc","prompt":"\"Das ist ja das Problem!\" vs. \"Das ist eben das Problem!\"","task":"Was ist der Unterschied?","options":["ja = Überraschung/Staunen; eben = logische Bestätigung/Schlussfolgerung","beide sind identisch","ja = Resignation; eben = Warnung","ja = Frage; eben = Aussage"],"answer":0},{"type":"mc","prompt":"Welche Partikel kann sowohl in Aussage- als auch in Imperativsätzen stehen?","task":"","options":["denn","doch","bloß allein","wohl allein"],"answer":1},{"type":"mc","prompt":"\"Du bist ja verrückt!\" — Ist \"ja\" hier betont oder unbetont?","task":"","options":["Betont — dann bedeutet es Zustimmung","Unbetont — Modalpartikel (Staunen/Überraschung)","Beide Varianten möglich","Betont — dann bedeutet es Widerspruch"],"answer":1},{"type":"mc","prompt":"In welchem Kontext klingt \"wohl\" am natürlichsten?","task":"","options":["Du bist dir 100% sicher.","Du spekulierst oder schätzt etwas ein.","Du gibst einen Befehl.","Du erinnerst an etwas Bekanntes."],"answer":1},{"type":"mc","prompt":"\"Dann musst du halt früher kommen.\"","task":"Was signalisiert \"halt\" an den Gesprächspartner?","options":["Der Sprecher ist wütend.","Es ist eine logische Konsequenz — keine andere Wahl.","Der Sprecher zweifelt.","Der Sprecher warnt."],"answer":1},{"type":"mc","prompt":"Welche Partikel passt am besten: \"Das ___ überraschend gut!\"","task":"","options":["denn","halt","wohl","ist ja"],"answer":3},{"type":"mc","prompt":"\"Schau mal!\" — Was ist die Funktion von \"mal\"?","task":"","options":["Warnung","Aufmerksamkeit lenken / einladen","Drohung","Resignation"],"answer":1},{"type":"mc","prompt":"Modalpartikeln stehen meistens…","task":"","options":["am Satzanfang","am Satzende","im Mittelfeld, nach dem finiten Verb","direkt vor dem Subjekt"],"answer":2},{"type":"mc","prompt":"Welche Aussage über Modalpartikeln ist FALSCH?","task":"","options":["Sie sind meist unbetont.","Sie kommen häufig in formellen Schreibtexten vor.","Sie drücken die Haltung des Sprechers aus.","Sie sind satztyp-abhängig."],"answer":1}],"4":[{"type":"mc","prompt":"Welche Partikel passt am besten?","task":"\"Du weißt ___, dass wir morgen eine Prüfung haben!\"","options":["wohl","mal","doch","denn"],"answer":2},{"type":"mc","prompt":"Welche Partikel passt?","task":"\"Er ist ___ krank — er sieht blass aus.\"","options":["ja","doch","wohl","halt"],"answer":2},{"type":"mc","prompt":"Welche Partikel passt?","task":"\"Das ist ___ eine gute Idee!\" (positiv überrascht)","options":["wohl","bloß","ja","halt"],"answer":2},{"type":"mc","prompt":"Welche Partikel passt?","task":"\"Das ___ nicht wahr sein!\" (empört, widerspricht)","options":["kann ja","kann doch","kann mal","kann denn"],"answer":1},{"type":"mc","prompt":"Zwei Sätze — welcher hat \"doch\" als Widerspruch (nicht als Erinnerung)?","task":"","options":["Du weißt doch, dass das teuer ist.","Das stimmt doch nicht!","Komm doch mit!","Du hast das doch schon gesehen."],"answer":1},{"type":"mc","prompt":"Welche Partikel passt am besten?","task":"\"___ machst du eigentlich so den ganzen Tag?\" (neugierig)","options":["Doch","Wohl","Was denn","Mal"],"answer":2},{"type":"mc","prompt":"\"Er hat ___ schon angerufen.\" — Was bedeutet \"ja\" hier?","task":"","options":["Überraschung","Das ist bereits bekannt — Selbstverständlichkeit","Warnung","Vermutung"],"answer":1},{"type":"mc","prompt":"\"Das dürfte ___ stimmen.\" — Welche Partikel verstärkt die Vermutung?","task":"","options":["ja","doch","wohl","mal"],"answer":2},{"type":"mc","prompt":"Welcher Satz klingt am natürlichsten im Deutschen?","task":"Kontext: Du lädst jemanden freundlich ins Zimmer ein.","options":["Komm wohl rein!","Komm doch rein!","Komm bloß rein!","Komm denn rein!"],"answer":1},{"type":"mc","prompt":"\"Das ist ___ bekannt.\" — Welche Partikel signalisiert, dass es allen bekannt ist?","task":"","options":["wohl","doch","ja","halt"],"answer":2},{"type":"mc","prompt":"\"Er ist ___ nicht dumm — er lernt nur nicht.\" — Welche Partikel relativiert?","task":"","options":["wohl","ja","eigentlich","denn"],"answer":2},{"type":"mc","prompt":"Welcher Satz enthält \"doch\" als milde Aufforderung (nicht Widerspruch)?","task":"","options":["Das stimmt doch nicht!","Du weißt doch, dass …","Ruf doch mal an!","Das ist doch unglaublich!"],"answer":2},{"type":"mc","prompt":"\"___ kommt er nicht?\" — Welche Partikel drückt freundliche Neugier aus?","task":"","options":["Wohl","Ja","Warum denn","Halt"],"answer":2}],"5":[{"type":"mc","prompt":"Du hörst im C1-Hörtext: \"Das ist ja wirklich bemerkenswert!\" — Welche Haltung hat der Sprecher?","task":"","options":["Er ist skeptisch.","Er ist positiv überrascht und beeindruckt.","Er warnt jemanden.","Er widerspricht."],"answer":1},{"type":"mc","prompt":"Im Dialog: A: \"Ich schaffe das nie.\" B: \"Das ist doch nicht so schwer!\"","task":"Was drückt \"doch\" in Bs Antwort aus?","options":["B stimmt zu.","B widerspricht A und relativiert die Aussage.","B ist resigniert.","B warnt A."],"answer":1},{"type":"mc","prompt":"Im Hörtext sagt jemand: \"Er kommt wohl zu spät.\" Was schlussfolgert der Sprecher?","task":"","options":["Er ist sicher, dass er zu spät kommt.","Er vermutet es, ist aber nicht sicher.","Er hofft, dass er zu spät kommt.","Er warnt vor Zuspätkommen."],"answer":1},{"type":"mc","prompt":"Welcher Satz klingt im gesprochenen Deutsch am natürlichsten?","task":"Kontext: Du bittest einen Freund, dir zu helfen.","options":["Hilf mir!","Hilf mir wohl!","Hilf mir doch mal!","Hilf mir bloß!"],"answer":2},{"type":"mc","prompt":"Im Gespräch: A erklärt ein Problem. B sagt: \"Das ist eben so.\" Was meint B?","task":"","options":["B ist überrascht.","B akzeptiert das als unvermeidliche Tatsache.","B widerspricht A.","B warnt A."],"answer":1},{"type":"mc","prompt":"Welcher Satz klingt am unnatürlichsten im gesprochenen Deutsch?","task":"","options":["Komm doch rein!","Das ist ja merkwürdig.","Ich bin denn müde.","Er kommt wohl später."],"answer":2},{"type":"mc","prompt":"Im C1-Hören: \"Mach das bloß nicht!\" — Welche Emotion steckt dahinter?","task":"","options":["Freundliche Einladung","Ernste Warnung / Besorgnis","Neugier","Überraschung"],"answer":1},{"type":"mc","prompt":"Was ist der Unterschied zwischen \"Komm mal!\" und \"Komm doch!\"?","task":"","options":["kein Unterschied","mal = sanfte Einladung; doch = leichte Ungeduld/Drängen","mal = Warnung; doch = Einladung","mal = formell; doch = informell"],"answer":1},{"type":"mc","prompt":"Im Hörtext: Zwei Kollegen sprechen. A: \"Warum ist er denn so nervös?\" — Was signalisiert \"denn\"?","task":"","options":["A ist wütend auf ihn.","A ist neugierig und zeigt Mitgefühl.","A warnt B.","A widerspricht B."],"answer":1},{"type":"mc","prompt":"Welche Kombination von Partikeln klingt natürlich auf Deutsch?","task":"","options":["Das ist doch wohl mal so.","Das ist ja doch wirklich interessant!","Das ist mal denn so.","Das ist wohl ja bloß so."],"answer":1},{"type":"mc","prompt":"Im Dialog: A berichtet etwas Schlechtes. B sagt: \"Das kann doch nicht sein!\"","task":"Was drückt \"doch\" hier aus?","options":["B erinnert A an etwas.","B ist empört und widerspricht der Aussage.","B ist neugierig.","B resigniert."],"answer":1},{"type":"mc","prompt":"Welche Aussage über Modalpartikeln in C1 ist korrekt?","task":"","options":["Sie kommen häufig in formellen Schreibaufgaben vor.","Sie sind nur in Fragesätzen möglich.","Sie sind wichtig fürs C1-Hören und C1-Sprechen, weniger für formelles Schreiben.","Sie verändern den Wahrheitsgehalt eines Satzes."],"answer":2},{"type":"mc","prompt":"Im C1-Hören sagt jemand: \"Das wäre eigentlich nicht nötig gewesen.\" Was meint der Sprecher?","task":"","options":["Es war absolut nötig.","Es wäre nötig gewesen, wenn etwas anders gewesen wäre.","Es war in Wirklichkeit nicht nötig — eine relativierende Einschätzung.","Es war überraschend nötig."],"answer":2}]},"examples":[]},{"id":"grafik-beschreiben","title":"Grafik beschreiben","tag":"Schreiben","desc":"4-Schritte-Aufbau, Redemittel, Trends, Mustertext — C1 Schreiben","levels":{"1":[{"type":"mc","prompt":"Womit beginnt man eine Grafikbeschreibung?","task":"","options":["Mit den genauen Zahlen und Daten","Mit einer Einleitung: Thema, Grafiktyp, Zeitraum — ohne Zahlen","Mit dem eigenen Kommentar","Mit dem auffälligsten Datenpunkt"],"answer":1},{"type":"mc","prompt":"\"Die Grafik zeigt die Entwicklung der Beschäftigungsquote zwischen 2010 und 2023.\"","task":"Zu welchem Teil der Grafikbeschreibung gehört dieser Satz?","options":["Überblick","Detailbeschreibung","Einleitung","Kommentar"],"answer":2},{"type":"mc","prompt":"\"Insgesamt lässt sich erkennen, dass die Zahlen über den gesamten Zeitraum gestiegen sind.\"","task":"Zu welchem Teil gehört dieser Satz?","options":["Einleitung","Überblick / Gesamttrend","Detailbeschreibung","Schluss"],"answer":1},{"type":"mc","prompt":"\"Auffällig ist der starke Rückgang zwischen 2019 und 2020, von 5,0 % auf 5,9 %.\"","task":"Zu welchem Teil gehört das?","options":["Einleitung","Überblick","Detailbeschreibung","Kommentar"],"answer":2},{"type":"mc","prompt":"\"Dies dürfte auf die wirtschaftliche Krise zurückzuführen sein.\"","task":"Zu welchem Teil gehört dieser Satz?","options":["Einleitung","Überblick","Detailbeschreibung","Kommentar / Schluss"],"answer":3},{"type":"mc","prompt":"Welches Redemittel passt für die EINLEITUNG?","task":"","options":["Insgesamt lässt sich erkennen, dass …","Die Grafik zeigt die Entwicklung … im Zeitraum von … bis …","Im Jahr 2010 lag der Wert bei …","Dies dürfte auf … zurückzuführen sein."],"answer":1},{"type":"mc","prompt":"Welches Redemittel passt für den KOMMENTAR?","task":"","options":["Die Grafik zeigt …","Von 2010 bis 2020 stieg der Anteil von … auf … %","Es bleibt abzuwarten, ob sich dieser Trend fortsetzt.","Im Vergleich zu … ist ein Rückgang zu verzeichnen."],"answer":2},{"type":"mc","prompt":"Welche Verbform benutzt man beim Beschreiben einer Grafik?","task":"","options":["Präteritum (Vergangenheit)","Futur II","Präsens (Gegenwart)","Plusquamperfekt"],"answer":2},{"type":"mc","prompt":"Was gehört in den ÜBERBLICK (Schritt 2)?","task":"","options":["Alle genauen Zahlen","Der auffälligste Gesamttrend in 1-2 Sätzen","Die Quelle der Grafik","Die eigene Meinung"],"answer":1},{"type":"mc","prompt":"Welcher Fehler ist typisch bei Anfängern?","task":"","options":["Zu wenig Details","Zu formelle Sprache","Alle Zahlen nennen ohne Struktur und Priorität","Die Einleitung zu lang machen"],"answer":2},{"type":"mc","prompt":"Was ist KEIN Teil einer Grafikbeschreibung?","task":"","options":["Einleitung","Überblick","Detailbeschreibung","Zusammenfassung des eigenen Lebens"],"answer":3},{"type":"mc","prompt":"Wie viele Wörter soll eine C1-Grafikbeschreibung ungefähr haben?","task":"","options":["50–80 Wörter","100–150 Wörter","200 Wörter (ca.)","400+ Wörter"],"answer":2},{"type":"mc","prompt":"\"Der Grafik ist zu entnehmen, dass der Anteil gestiegen ist.\"","task":"Wo steht dieser Satz am besten?","options":["Detailbeschreibung","Kommentar","Einleitung oder Überblick","Schluss"],"answer":2}],"2":[{"type":"mc","prompt":"Der Wert ist von 10 % auf 25 % gestiegen. Welches Wort beschreibt die Intensität am besten?","task":"","options":["leicht","geringfügig","stark / deutlich","gleichmäßig"],"answer":2},{"type":"mc","prompt":"Der Anteil bleibt zwischen 2015 und 2018 konstant bei 30 %. Welches Verb passt?","task":"","options":["steigt","sinkt","stagniert / bleibt konstant","bricht ein"],"answer":2},{"type":"fill","prompt":"Der Wert ist von 15 % auf 8 % gesunken. → Der Wert ___ um 7 Prozentpunkte ___.","task":"Ergänze Verb + Richtungswort:","answer":"sank zurück","hint":"sinken + zurückgehen → sank zurück / ging zurück"},{"type":"mc","prompt":"Welches Wort beschreibt einen sehr schnellen, plötzlichen Anstieg?","task":"","options":["stetig","kontinuierlich","rapide / sprunghaft","geringfügig"],"answer":2},{"type":"fill","prompt":"Im Jahr 2010 betrug der Anteil 20 %, 2020 waren es 35 %. → Der Wert ___ von 20 % ___ 35 %.","task":"Ergänze Präpositionen:","answer":"stieg von auf","hint":"steigen + von … auf … (Ausgangswert → Endwert)"},{"type":"mc","prompt":"Welcher Ausdruck passt für ein Kreisdiagramm mit Prozentwerten?","task":"\"Deutschland hat den größten Anteil ___ 35 %.\"","options":["von","mit einem Anteil von","aus","bei"],"answer":1},{"type":"mc","prompt":"Welches Redemittel beschreibt einen Kontrast zwischen zwei Gruppen?","task":"","options":["stetig","während … stieg, sank …","im Großen und Ganzen","stagniert"],"answer":1},{"type":"fill","prompt":"Der höchste Wert wurde 2015 mit 42 % gemessen. → Der Wert ___ 2015 einen ___ von 42 %.","task":"Ergänze Verb + Nomen:","answer":"erreichte Höchstwert","hint":"erreichen + Höchstwert / Tiefstwert"},{"type":"mc","prompt":"Was bedeutet \"verzeichnet einen starken Rückgang\"?","task":"","options":["Es steigt stark an.","Es sinkt stark.","Es bleibt konstant.","Es schwankt stark."],"answer":1},{"type":"mc","prompt":"Welches Adverb passt für eine gleichmäßige, regelmäßige Steigerung?","task":"","options":["rapide","sprunghaft","kontinuierlich / stetig","drastisch"],"answer":2},{"type":"fill","prompt":"Group A: 45 %. Group B: 30 %. → ___ zu Gruppe B liegt Gruppe A um 15 Prozentpunkte ___.","task":"Ergänze Präposition + Adverb:","answer":"Im Vergleich vorne","hint":"Im Vergleich zu … liegt … vorne / höher / niedriger"},{"type":"mc","prompt":"Welcher Satz beschreibt einen Trend in der VERGANGENHEIT korrekt (Grafikpräsens)?","task":"","options":["Die Zahlen waren gestiegen.","Die Zahlen stiegen zwischen 2010 und 2020.","Die Zahlen steigen zwischen 2010 und 2020.","Die Zahlen sind gestigen."],"answer":2},{"type":"mc","prompt":"\"Im Gegensatz dazu\" leitet welche Art von Information ein?","task":"","options":["Eine Erklärung / Ursache","Einen Kontrast oder Gegensatz","Eine Zusammenfassung","Eine Prognose"],"answer":1}],"3":[{"type":"fill","prompt":"Die Grafik zeigt den Anteil erneuerbarer Energien 2005–2022.","task":"Schreibe eine Einleitung (1 Satz):","answer":"Das vorliegende Diagramm zeigt die Entwicklung des Anteils erneuerbarer Energien im Zeitraum von 2005 bis 2022.","hint":"Grafiktyp + zeigt + Thema + Zeitraum"},{"type":"mc","prompt":"Wähle die beste Formulierung für einen Überblick:","task":"Thema: Arbeitslosenquote ist insgesamt gesunken.","options":["Insgesamt sank die Arbeitslosenquote deutlich über den Betrachtungszeitraum.","Die Arbeitslosenquote war 7 % in 2010 und 5 % in 2020.","Die Grafik ist sehr interessant und informativ.","Es gibt viele Zahlen in der Grafik."],"answer":0},{"type":"fill","prompt":"2010: 8 %. 2015: 14 %. 2020: 22 %. — Beschreibe die Entwicklung in einem Satz.","task":"","answer":"Der Anteil stieg von 8 % im Jahr 2010 auf 22 % im Jahr 2020 kontinuierlich an.","hint":"von … auf … + kontinuierlich + ansteigen"},{"type":"mc","prompt":"Welche Kommentarformulierung klingt am C1-gerechsten?","task":"","options":["Ich denke, das kommt vom Wirtschaftswachstum.","Das ist wegen der Wirtschaft so.","Dies dürfte auf das Wirtschaftswachstum zurückzuführen sein.","Die Wirtschaft hat das verursacht, glaube ich."],"answer":2},{"type":"fill","prompt":"Formuliere einen Schlusssatz mit Ausblick.","task":"Thema: Digitalisierung nimmt zu.","answer":"Es bleibt abzuwarten, ob dieser Trend zur Digitalisierung auch in den kommenden Jahren anhalten wird.","hint":"Es bleibt abzuwarten, ob … (Konjunktiv / Zukunft)"},{"type":"mc","prompt":"Welcher Satz beschreibt am präzisesten einen Höchstwert?","task":"","options":["Die Zahl war sehr hoch 2015.","2015 gab es viele Zahlen.","Im Jahr 2015 erreichte der Wert mit 38 % seinen Höchststand.","In 2015 war das Maximum."],"answer":2},{"type":"fill","prompt":"Gruppe A: 55 %. Gruppe B: 30 %. — Beschreibe den Unterschied.","task":"","answer":"Mit einem Anteil von 55 % liegt Gruppe A deutlich vor Gruppe B mit 30 %.","hint":"Mit einem Anteil von … liegt … deutlich vor/über …"},{"type":"mc","prompt":"Welches Redemittel leitet einen Kontrast zwischen zwei Trends ein?","task":"\"Während die Exportzahlen stiegen, ___ die Importe zurück.\"","options":["hingegen","gingen","wohingegen","aber"],"answer":1},{"type":"fill","prompt":"Der Wert sank 2020 plötzlich stark. — Beschreibe dies mit einem C1-Ausdruck.","task":"","answer":"Im Jahr 2020 verzeichnet der Wert einen drastischen / rapiden Rückgang.","hint":"verzeichnet + Adjektiv + Rückgang / Anstieg"},{"type":"mc","prompt":"Welcher Satz formuliert vorsichtig eine mögliche Ursache?","task":"","options":["Die Ursache ist die Digitalisierung.","Ein möglicher Grund hierfür könnte die zunehmende Digitalisierung sein.","Das kommt von der Digitalisierung.","Wegen Digitalisierung ist das so."],"answer":1},{"type":"fill","prompt":"Formuliere einen Überblick-Satz für: Anteil von Frauen in Führungspositionen steigt leicht.","task":"","answer":"Insgesamt lässt sich ein leichter Anstieg des Anteils von Frauen in Führungspositionen erkennen.","hint":"Insgesamt lässt sich + Trend + erkennen"},{"type":"mc","prompt":"Welcher Satz vergleicht zwei Werte korrekt?","task":"","options":["2010 war kleiner als 2020.","Im Vergleich zu 2010 ist der Wert in 2020 um 10 Prozentpunkte gestiegen.","2020 ist mehr als 2010.","Die Zahlen sind verschieden in 2010 und 2020."],"answer":1},{"type":"fill","prompt":"Beende den Satz: \"Auffällig ist, dass der Anteil zwischen 2018 und 2020 um 8 Prozentpunkte gestiegen ist, ___ darauf hindeutet, ___ die Nachfrage erheblich zugenommen hat.\"","task":"Ergänze die Konnektoren:","answer":"was dass","hint":"was darauf hindeutet, dass … (Relativsatz + dass-Satz)"}],"4":[{"type":"mc","prompt":"In welcher Reihenfolge soll eine Grafikbeschreibung aufgebaut sein?","task":"","options":["Kommentar → Überblick → Einleitung → Details","Einleitung → Details → Überblick → Kommentar","Einleitung → Überblick → Details → Kommentar","Details → Einleitung → Kommentar → Überblick"],"answer":2},{"type":"mc","prompt":"Wann nennt man die genauen Zahlen?","task":"","options":["In der Einleitung","Im Überblick","In der Detailbeschreibung","Nur im Kommentar"],"answer":2},{"type":"mc","prompt":"Was soll die Einleitung NICHT enthalten?","task":"","options":["Den Grafiktyp","Das Thema","Den Zeitraum","Die genauen Zahlen"],"answer":3},{"type":"mc","prompt":"Welche Daten sollte man in der Detailbeschreibung besonders erwähnen?","task":"","options":["Alle vorhandenen Zahlen","Nur Zahlen aus der Einleitung","Markanteste Werte: Höchst-/Tiefstpunkt, Wendepunkte, auffällige Veränderungen","Nur den Trend, keine Zahlen"],"answer":2},{"type":"mc","prompt":"Wie lang sollte der Kommentar/Schluss im Verhältnis zum Gesamttext sein?","task":"","options":["Mindestens die Hälfte des Textes","2–4 Sätze — kurz und präzise","Gar kein Kommentar nötig","So lang wie die Detailbeschreibung"],"answer":1},{"type":"mc","prompt":"Welcher Satz gehört in die Einleitung?","task":"","options":["Der Höchstwert von 45 % wurde 2018 erreicht.","Dies dürfte auf politische Maßnahmen zurückzuführen sein.","Das Balkendiagramm stellt den Anteil der Studierenden je Bundesland dar.","Von 2015 auf 2020 sank der Anteil um 5 %."],"answer":2},{"type":"mc","prompt":"Welcher Satz gehört in den ÜBERBLICK?","task":"","options":["Im Jahr 2010 lag der Anteil bei 15 %.","Generell ist über den Betrachtungszeitraum ein deutlicher Anstieg zu verzeichnen.","Dies könnte auf wirtschaftliche Faktoren zurückzuführen sein.","Das Diagramm zeigt die Entwicklung 2010–2020."],"answer":1},{"type":"mc","prompt":"Was ist der Zweck des Überblicks (Schritt 2)?","task":"","options":["Alle Zahlen auflisten","Den wichtigsten Gesamttrend in 1-2 Sätzen zusammenfassen","Die Grafik erklären","Den Leser mit Details informieren"],"answer":1},{"type":"mc","prompt":"Welche Aussage über Grafikpräsens ist korrekt?","task":"","options":["Man benutzt immer Vergangenheit, weil die Daten alt sind.","Man benutzt Präsens, weil die Grafik jetzt beschrieben wird.","Man benutzt Futur, weil es Prognosen gibt.","Man kann beides verwenden — es ist egal."],"answer":1},{"type":"mc","prompt":"Welcher Satz ist C1-sprachlich am schwächsten?","task":"","options":["Auffällig ist der starke Rückgang zwischen 2019 und 2020.","Im Vergleich zu 2015 ist ein deutlicher Anstieg zu verzeichnen.","Die Zahl geht hoch und dann runter.","Dies dürfte auf strukturelle Veränderungen zurückzuführen sein."],"answer":2},{"type":"mc","prompt":"Welches Redemittel LEITET einen Vergleich zwischen zwei Kategorien ein?","task":"","options":["Insgesamt …","Während Gruppe A stieg, sank Gruppe B.","Es bleibt abzuwarten, ob …","Im Jahr 2015 …"],"answer":1},{"type":"mc","prompt":"Wie viele der wichtigsten Datenpunkte sollte man erwähnen?","task":"","options":["Alle — sonst verliert man Punkte","Nur die auffälligsten 3–5 Werte","Nur den Anfangs- und Endwert","Nur den Höchstwert"],"answer":1},{"type":"mc","prompt":"Welches Stilmittel zeigt C1-Niveau im Kommentar?","task":"","options":["\"Ich glaube, das ist wegen …\"","\"Das kommt von …\"","\"Dies dürfte auf … zurückzuführen sein.\"","\"Das ist so, weil …\""],"answer":2}],"5":[{"type":"mc","prompt":"Welcher Einstieg klingt am formalsten für eine C1-Grafikbeschreibung?","task":"","options":["Diese Grafik ist über Arbeitslose in Deutschland.","Das ist ein Diagramm über Arbeit.","Das vorliegende Liniendiagramm zeigt die Entwicklung der Arbeitslosenquote in Deutschland im Zeitraum von 2010 bis 2023.","Die Grafik informiert uns über Arbeitslosigkeit."],"answer":2},{"type":"mc","prompt":"Welcher Kommentarsatz ist C1-gerecht und vorsichtig formuliert?","task":"","options":["Der Grund ist die Corona-Krise.","Dies muss an der Corona-Krise liegen.","Ein möglicher Grund für den Anstieg 2020 könnte die Corona-Pandemie darstellen.","Corona hat die Zahlen hochgetrieben."],"answer":2},{"type":"fill","prompt":"C1-Detailbeschreibung: \"Im Jahr 2010 betrug der Anteil 12 %. Bis 2020 ___ er auf 28 % ___.\"","task":"Ergänze Verb + Richtung:","answer":"stieg an","hint":"ansteigen → stieg … an (trennbar, Präteritum)"},{"type":"mc","prompt":"Welcher Satz enthält einen FEHLER?","task":"","options":["Die Grafik zeigt den Anteil der Studierenden.","Im Jahr 2015 erreichte der Wert seinen Höchststand.","Der Wert sinkte von 30 % auf 25 % zwischen 2018 und 2020.","Die Zahlen sind von 2010 bis 2020 gestiegen worden."],"answer":3},{"type":"fill","prompt":"Schreibe einen Überblick-Satz: Kreisdiagramm — Deutschland hat den größten Anteil (38 %), gefolgt von Frankreich (25 %).","task":"","answer":"An erster Stelle steht Deutschland mit einem Anteil von 38 %, gefolgt von Frankreich mit 25 %.","hint":"An erster Stelle steht … mit … %, gefolgt von … mit … %"},{"type":"mc","prompt":"Welcher Schlusssatz klingt am C1-gerechsten?","task":"","options":["Alles in allem ist es interessant.","Man kann nicht wissen, was passiert.","Zusammenfassend lässt sich sagen, dass die Digitalisierung langfristig den Arbeitsmarkt tiefgreifend verändern dürfte.","Das ist sehr gut für die Wirtschaft."],"answer":2},{"type":"fill","prompt":"Formuliere: Der Anteil von Frauen in Führungspositionen ist von 2015 bis 2022 von 18 % auf 28 % gestiegen.","task":"C1-Version mit Redemitteln:","answer":"Der Anteil von Frauen in Führungspositionen stieg im Zeitraum von 2015 bis 2022 von 18 % auf 28 % an.","hint":"stieg … an + von … auf … + im Zeitraum von … bis …"},{"type":"mc","prompt":"Welche Kombination von Redemitteln ist für eine C1-Grafikbeschreibung ideal?","task":"","options":["viele; immer; sehr; gut","deutlich; kontinuierlich; auffällig; zurückzuführen sein","schnell; groß; wichtig; zeigen","hoch; niedrig; viel; wenig"],"answer":1},{"type":"mc","prompt":"Was ist der Unterschied zwischen \"Prozent\" und \"Prozentpunkte\"?","task":"","options":["kein Unterschied","Prozent = relativer Anteil; Prozentpunkte = absolute Differenz zwischen zwei Prozentwerten","Prozentpunkte = höher als Prozent","Prozent = für Grafiken; Prozentpunkte = für Tabellen"],"answer":1},{"type":"fill","prompt":"Auffällig ist, dass der Wert zwischen 2019 und 2020 um 5 Prozentpunkte sank, ___ ___ hinweist, ___ die Pandemie erhebliche Auswirkungen hatte.","task":"Ergänze: was darauf / dass","answer":"was darauf dass","hint":"was darauf hinweist, dass … (Relativsatz + dass-Satz)"},{"type":"mc","prompt":"Welcher Satz beschreibt einen Rückgang C1-sprachlich korrekt?","task":"","options":["Die Zahl ist kleiner geworden.","Es gab einen Rückgang.","Zwischen 2018 und 2020 verzeichnet die Arbeitslosenquote einen deutlichen Rückgang von 5,7 % auf 3,2 %.","Die Zahlen gingen down von 5,7 auf 3,2."],"answer":2},{"type":"mc","prompt":"Welche Aussage über die Länge der Grafikbeschreibung ist richtig?","task":"","options":["Je länger desto besser — immer alle Zahlen nennen","Ca. 200 Wörter: präzise Auswahl der wichtigsten Daten, strukturiert in 4 Teile","Kurz und knapp: 50 Wörter reichen","Kommentar weglassen, um kürzer zu sein"],"answer":1},{"type":"mc","prompt":"Welche Formulierung ist NICHT geeignet für eine C1-Grafikbeschreibung?","task":"","options":["Insgesamt lässt sich ein deutlicher Anstieg erkennen.","Der Grafik ist zu entnehmen, dass …","Ich finde, die Grafik zeigt etwas sehr Wichtiges.","Auffällig ist, dass der Wert 2020 seinen Tiefststand erreichte."],"answer":2}]},"examples":[]}]}
+;
+
+  function gr_getProgress(topicId) {
+    try {
+      var raw = localStorage.getItem('c1-gr-' + topicId);
+      return raw ? JSON.parse(raw) : {};
+    } catch (e) { return {}; }
+  }
+  function gr_saveProgress(topicId, level, correct, total) {
+    try {
+      var prog = gr_getProgress(topicId);
+      prog[level] = { correct: correct, total: total, done: true };
+      localStorage.setItem('c1-gr-' + topicId, JSON.stringify(prog));
+    } catch (e) {}
+    syncToSheet('save_progress', {
+      modul: 'grammatik:' + topicId,
+      item_id: 'stufe' + level,
+      ergebnis: correct + '/' + total,
+      box_neu: ''
+    });
+  }
+  function gr_topicPercent(topicId) {
+    var prog = gr_getProgress(topicId);
+    var doneLevels = Object.keys(prog).length;
+    return Math.round((doneLevels / 5) * 100);
+  }
+
+  function renderTopicList() {
+    document.getElementById('gr-topic-detail').style.display = 'none';
+    var wrap = document.getElementById('gr-topic-list');
+    wrap.style.display = 'block';
+
+    var html = '<p class="eyebrow">03 — Grammatik &amp; Wortschatzstil</p>' +
+      '<h1 style="font-size:24px; margin-bottom:6px;">Themen</h1>' +
+      '<p style="font-size:13px; color:var(--ink-soft); margin-bottom:20px;">' +
+        GRAMMATIK_DATA.topics.length + ' Themen · je 5 Schwierigkeitsstufen</p>' +
+      '<div class="topic-grid">';
+
+    GRAMMATIK_DATA.topics.forEach(function (t) {
+      var pct = gr_topicPercent(t.id);
+      html += '<button class="topic-card" data-topic="' + t.id + '">' +
+        '<div class="tt">' + t.title + '</div>' +
+        '<div class="td">' + t.desc + '</div>' +
+        '<div class="topic-progress-bar"><div class="topic-progress-fill" style="width:' + pct + '%;"></div></div>' +
+        '<div class="topic-progress-label">' + (pct > 0 ? pct + '% abgeschlossen' : 'noch nicht begonnen') + '</div>' +
+        '</button>';
+    });
+    html += '</div>';
+    wrap.innerHTML = html;
+
+    wrap.querySelectorAll('.topic-card').forEach(function (btn) {
+      btn.addEventListener('click', function () { openTopic(btn.dataset.topic); });
+    });
+  }
+
+  var currentTopic = null;
+  var currentLevel = 1;
+
+  function openTopic(topicId) {
+    currentTopic = GRAMMATIK_DATA.topics.find(function (t) { return t.id === topicId; });
+    currentLevel = 1;
+    document.getElementById('gr-topic-list').style.display = 'none';
+    document.getElementById('gr-topic-detail').style.display = 'block';
+    renderTopicDetail();
+  }
+
+  function renderTopicDetail() {
+    var t = currentTopic;
+    var prog = gr_getProgress(t.id);
+    var detail = document.getElementById('gr-topic-detail');
+
+    var pillsHtml = '';
+    for (var l = 1; l <= 5; l++) {
+      var done = prog[l] ? ' (' + prog[l].correct + '/' + prog[l].total + ')' : '';
+      pillsHtml += '<div class="level-pill' + (l === currentLevel ? ' active' : '') + '" data-level="' + l + '">Stufe ' + l + done + '</div>';
+    }
+
+    var examplesHtml = '';
+    if (t.examples && t.examples.length) {
+      examplesHtml = '<div class="card" style="margin-bottom:18px; border-left-color:var(--mod-grammatik);">' +
+        '<p class="eyebrow" style="margin-bottom:10px;">Beispiele</p>' +
+        t.examples.slice(0, 4).map(function (ex) {
+          var de = ex.phrase ? ex.de.replace(ex.phrase, '<strong style="color:var(--mod-grammatik);">' + ex.phrase + '</strong>') : ex.de;
+          return '<p style="font-size:13.5px; margin-bottom:4px; line-height:1.6;">' + de + '</p>' +
+                 '<p style="font-size:12px; color:var(--ink-soft); margin-bottom:10px; font-style:italic;">' + ex.vi + '</p>';
+        }).join('') +
+        '</div>';
+    }
+
+    detail.innerHTML =
+      '<button class="btn btn-ghost" id="gr-back-list" style="margin-bottom:16px;">&larr; Alle Themen</button>' +
+      '<p class="eyebrow">03 — Grammatik · ' + t.tag + '</p>' +
+      '<h1 style="font-size:22px; margin-bottom:14px;">' + t.title + '</h1>' +
+      examplesHtml +
+      '<div class="level-pills" id="gr-level-pills">' + pillsHtml + '</div>' +
+      '<div id="gr-exercise-list"></div>' +
+      '<div id="gr-result-slot"></div>';
+
+    document.getElementById('gr-back-list').addEventListener('click', renderTopicList);
+    detail.querySelectorAll('.level-pill').forEach(function (p) {
+      p.addEventListener('click', function () {
+        currentLevel = parseInt(p.dataset.level, 10);
+        renderTopicDetail();
+      });
+    });
+
+    renderExerciseList();
+  }
+
+  function renderExerciseList() {
+    var t = currentTopic;
+    var exs = t.levels[String(currentLevel)] || [];
+    var list = document.getElementById('gr-exercise-list');
+    var answers = {};
+
+    var html = '';
+    exs.forEach(function (ex, i) {
+      html += '<div class="gr-ex-card" id="gr-ex-' + i + '">' +
+        '<div class="gr-ex-num">AUFGABE ' + (i + 1) + ' / ' + exs.length + '</div>' +
+        '<div class="gr-ex-prompt">' + ex.prompt + '</div>' +
+        (ex.task ? '<div class="gr-ex-task">' + ex.task + '</div>' : '');
+      if (ex.type === 'mc') {
+        html += '<div class="opt-list">';
+        ex.options.forEach(function (opt, oi) {
+          html += '<button class="opt" data-ex="' + i + '" data-opt="' + oi + '">' + opt + '</button>';
+        });
+        html += '</div>';
+      } else if (ex.type === 'fill') {
+        html += '<input class="cloze-input" data-ex="' + i + '" type="text" placeholder="Antwort …" autocomplete="off" />';
+      }
+      html += '<div class="cloze-feedback" id="gr-fb-' + i + '"></div></div>';
+    });
+    list.innerHTML = html;
+
+    list.querySelectorAll('.opt').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        var exIdx = parseInt(btn.dataset.ex, 10);
+        var optIdx = parseInt(btn.dataset.opt, 10);
+        answers[exIdx] = optIdx;
+        var siblings = list.querySelectorAll('.opt[data-ex="' + exIdx + '"]');
+        siblings.forEach(function (s) { s.classList.remove('selected'); });
+        btn.classList.add('selected');
+      });
+    });
+
+    document.getElementById('gr-result-slot').innerHTML =
+      '<div style="display:flex; justify-content:center; margin:24px 0 60px;">' +
+      '<button class="btn btn-primary" id="gr-check-all">Auswerten</button></div>';
+
+    document.getElementById('gr-check-all').addEventListener('click', function () {
+      var correct = 0;
+      exs.forEach(function (ex, i) {
+        var card = document.getElementById('gr-ex-' + i);
+        var fb = document.getElementById('gr-fb-' + i);
+        if (ex.type === 'mc') {
+          var chosen = answers[i];
+          var opts = list.querySelectorAll('.opt[data-ex="' + i + '"]');
+          opts.forEach(function (o) { o.disabled = true; });
+          var isCorrect = chosen === ex.answer;
+          if (isCorrect) { correct++; opts[ex.answer].classList.add('correct'); }
+          else if (chosen !== undefined) {
+            opts[chosen].classList.add('wrong');
+            opts[ex.answer].classList.add('correct');
+          } else {
+            opts[ex.answer].classList.add('correct');
+          }
+          card.classList.add(isCorrect ? 'correct' : 'wrong');
+        } else if (ex.type === 'fill') {
+          var input = list.querySelector('.cloze-input[data-ex="' + i + '"]');
+          var val = (input.value || '').trim().toLowerCase();
+          var accepted = Array.isArray(ex.answer) ? ex.answer.map(function(a){return a.toLowerCase();}) : [String(ex.answer).toLowerCase()];
+          var isOk = accepted.indexOf(val) !== -1;
+          input.disabled = true;
+          input.classList.add(isOk ? 'correct' : 'wrong');
+          fb.textContent = isOk ? 'Richtig.' : 'Lösung: „' + (Array.isArray(ex.answer) ? ex.answer[0] : ex.answer) + '“';
+          if (isOk) correct++;
+          card.classList.add(isOk ? 'correct' : 'wrong');
+        }
+      });
+
+      gr_saveProgress(t.id, currentLevel, correct, exs.length);
+
+      document.getElementById('gr-result-slot').innerHTML =
+        '<div class="complete-box" style="margin:30px auto 60px;">' +
+        '<h2 style="font-size:20px; margin-bottom:8px;">' + correct + ' / ' + exs.length + ' richtig</h2>' +
+        '<p style="font-size:13px; color:var(--ink-soft); margin-bottom:20px;">Stufe ' + currentLevel + ' · ' + t.title + '</p>' +
+        (currentLevel < 5
+          ? '<button class="btn btn-primary" id="gr-next-level">Nächste Stufe →</button>'
+          : '<button class="btn btn-ghost" id="gr-back-list-2">Zurück zu den Themen</button>') +
+        '</div>';
+
+      if (currentLevel < 5) {
+        document.getElementById('gr-next-level').addEventListener('click', function () {
+          currentLevel++;
+          renderTopicDetail();
+        });
+      } else {
+        document.getElementById('gr-back-list-2').addEventListener('click', renderTopicList);
+      }
+    });
+  }
+
+  document.querySelector('.navitem[data-page="grammatik"]').addEventListener('click', function () {
+    renderTopicList();
+  });
+
+  // =====================================================================
+  // WORTSCHATZ — Session-Engine
+  // Datenschema wie besprochen (VocabCard). box: 1-3 grobe Leitner-Stufe,
+  // bestimmt welche Übungsstufe gezeigt wird (1=MC, 2=Cloze, 3=Produktion).
+  // Persistenz hier bewusst nur in-memory (Demo) — für echten Einsatz an
+  // localStorage/Backend anbinden.
+  // =====================================================================
+
+  var DECK = [
+    {
+      id: "rw001", type: "redewendung", lemma: "einen Vogel haben",
+      stilebene: "ugs.", box: 1,
+      bildhinweis: "Vogel im Kopf",
+      beispiel: "Du hast wohl einen Vogel, bei diesem Wetter joggen zu gehen!",
+      stufe1: {
+        frage: "Welche Bedeutung hat die Redewendung?",
+        optionen: ["sehr müde sein", "völlig frei sein wollen", "verrückt sein", "gerne früh aufstehen"],
+        korrekt: 2
+      },
+      stufe2: { satz: "Du hast wohl einen ___, hier ohne Jacke rauszugehen bei dem Wetter!", loesung: "vogel" },
+      stufe3: { prompt: "Schreiben Sie einen Satz mit „einen Vogel haben“ über eine Situation aus Ihrem Alltag." }
+    },
+    {
+      id: "wt001", type: "wort", lemma: "sagen → C1",
+      stilebene: "neutral", box: 1,
+      leiter: { B1: "sagen", B2: "äußern, betonen", C1: "zum Ausdruck bringen, sich dahingehend äußern" },
+      beispiel: "Der Minister äußerte sich dahingehend, dass eine Reform notwendig sei.",
+      stufe1: {
+        frage: "Welche C1-Variante passt am besten zu „sagen“ in einem formellen Kontext?",
+        optionen: ["zum Ausdruck bringen", "quatschen", "erzählen", "reden"],
+        korrekt: 0
+      },
+      stufe2: { satz: "Die Studie ___ zum Ausdruck, dass sich die Lage verschlechtert hat.", loesung: "bringt" },
+      stufe3: { prompt: "Formulieren Sie einen Satz, in dem Sie „zum Ausdruck bringen“ statt „sagen“ verwenden." }
+    },
+    {
+      id: "fv001", type: "funktionsverb", lemma: "Rücksicht nehmen auf",
+      stilebene: "geh.", box: 1,
+      beispiel: "Man sollte im Straßenverkehr stets Rücksicht auf ältere Menschen nehmen.",
+      stufe1: {
+        frage: "„Rücksicht nehmen auf“ bedeutet am ehesten:",
+        optionen: ["etwas ignorieren", "etwas berücksichtigen", "etwas ablehnen", "etwas beschleunigen"],
+        korrekt: 1
+      },
+      stufe2: { satz: "Bei der Planung wurde keine ___ auf die Anwohner genommen.", loesung: "rücksicht" },
+      stufe3: { prompt: "Schreiben Sie einen Satz mit „Rücksicht nehmen auf“ zum Thema Arbeit oder Familie." }
+    },
+    {
+      id: "wt002", type: "wort", lemma: "groß → C1",
+      stilebene: "neutral", box: 1,
+      leiter: { B1: "groß", B2: "beträchtlich", C1: "immens, gravierend" },
+      beispiel: "Die Auswirkungen des Klimawandels sind bereits jetzt gravierend.",
+      stufe1: {
+        frage: "Welches Wort passt für „groß“ in einem sehr formellen/akademischen Text?",
+        optionen: ["riesig", "gravierend", "mega", "dick"],
+        korrekt: 1
+      },
+      stufe2: { satz: "Die Folgen dieser Entscheidung sind ___, das heißt sehr gravierend.", loesung: "immens" },
+      stufe3: { prompt: "Schreiben Sie einen Satz mit „gravierend“ über ein gesellschaftliches Thema." }
+    },
+    {
+      id: "rw002", type: "redewendung", lemma: "die Kirche im Dorf lassen",
+      stilebene: "ugs.", box: 1,
+      bildhinweis: "eine Kirche bleibt im Dorf stehen, nichts wird übertrieben",
+      beispiel: "Ein Fehler, ja — aber lass uns die Kirche im Dorf lassen, so schlimm war es nicht.",
+      stufe1: {
+        frage: "Welche Bedeutung hat die Redewendung?",
+        optionen: ["etwas übertreiben", "realistisch/maßvoll bleiben", "religiös sein", "sich verstecken"],
+        korrekt: 1
+      },
+      stufe2: { satz: "Lass uns die ___ im Dorf lassen, das Problem ist nicht so groß.", loesung: "kirche" },
+      stufe3: { prompt: "Schreiben Sie einen Satz mit „die Kirche im Dorf lassen“ in einer Diskussion." }
+    }
+  ];
+
+  var SESSION_LIMIT = 6; // bewusst klein — kurze, machbare Sitzung statt Berg an Karten
+  var session = [];
+  var sessionIndex = 0;
+  var sessionCorrectCount = 0;
+  var streak = 11; // Demo-Wert
+  var sheetDeckCache = null; // einmal geladen, im Speicher behalten für diese Sitzung
+
+  // Wandelt eine Zeile aus dem Sheet (flache Spalten) in die verschachtelte
+  // Kartenstruktur um, die die Render-Funktionen unten erwarten.
+  function rowToCard(row) {
+    var isWort = String(row.type).trim() === 'wort';
+    return {
+      id: row.id,
+      type: row.type,
+      lemma: row.lemma,
+      stilebene: row.stilebene,
+      box: 1,
+      bildhinweis: row.bildhinweis || null,
+      leiter: isWort ? { B1: row.b1, B2: row.b2, C1: row.c1 } : null,
+      beispiel: row.beispiel_de,
+      stufe1: {
+        frage: row.mc_frage,
+        optionen: String(row.mc_optionen).split('|').map(function (s) { return s.trim(); }),
+        korrekt: parseInt(row.mc_korrekt, 10)
+      },
+      stufe2: { satz: row.cloze_satz, loesung: row.cloze_loesung },
+      stufe3: { prompt: row.produktion_prompt }
+    };
+  }
+
+  function loadDeck(callback) {
+    if (sheetDeckCache) { callback(sheetDeckCache); return; }
+    if (!SHEET_API_URL) { callback(DECK); return; }
+
+    fetch(SHEET_API_URL + '?action=wortschatz')
+      .then(function (res) { return res.json(); })
+      .then(function (json) {
+        if (json.error || !json.cards || !json.cards.length) { callback(DECK); return; }
+        sheetDeckCache = json.cards.map(rowToCard);
+        callback(sheetDeckCache);
+      })
+      .catch(function () { callback(DECK); });
+  }
+
+  function buildSession() {
+    var slot = document.getElementById('wz-card-slot');
+    slot.innerHTML = '<p style="font-size:13px; color:var(--ink-soft); text-align:center; margin-top:40px;">Lade Karten …</p>';
+    loadDeck(function (deck) {
+      session = deck.slice(0, SESSION_LIMIT).map(function (card) {
+        return { card: card, stage: card.box }; // box 1 -> Stufe1 zuerst
+      });
+      sessionIndex = 0;
+      sessionCorrectCount = 0;
+      renderSessionTrack();
+      renderCurrentCard();
+    });
+  }
+
+  function renderSessionTrack() {
+    var track = document.getElementById('wz-session-track');
+    track.innerHTML = '';
+    session.forEach(function (item, i) {
+      var dot = document.createElement('div');
+      dot.className = 'session-dot' + (i < sessionIndex ? ' done' : (i === sessionIndex ? ' now' : ''));
+      track.appendChild(dot);
+    });
+    document.getElementById('wz-progress').textContent =
+      '02 — Wortschatz · Karte ' + Math.min(sessionIndex + 1, session.length) + ' von ' + session.length;
+  }
+
+  function stufeLabel(n) {
+    return n === 1 ? 'Stufe 1 · Bedeutung erkennen'
+         : n === 2 ? 'Stufe 2 · Lücke ergänzen'
+         : 'Stufe 3 · Selbst formulieren';
+  }
+
+  function renderCurrentCard() {
+    var slot = document.getElementById('wz-card-slot');
+    if (sessionIndex >= session.length) {
+      slot.innerHTML = '';
+      renderSessionComplete();
+      return;
+    }
+    document.getElementById('wz-session-complete').style.display = 'none';
+    slot.style.display = 'block';
+
+    var item = session[sessionIndex];
+    var card = item.card;
+    var stufe = item.stage;
+
+    var tagsHtml = '<span class="tag' + (card.stilebene === 'ugs.' ? ' stil-ugs' : (card.stilebene === 'geh.' ? ' stil-geh' : '')) + '">' + card.stilebene + '</span>' +
+      '<span class="tag">' + (card.type === 'redewendung' ? 'Redewendung' : card.type === 'funktionsverb' ? 'Funktionsverbgefüge' : 'Wort') + '</span>';
+
+    var imgHtml = card.bildhinweis
+      ? '<div class="img-slot" style="width:76px; height:76px; font-size:10px; flex-shrink:0;">[BILD:<br>' + card.bildhinweis + ']</div>'
+      : '';
+
+    var header =
+      '<div class="stufe-track">' +
+        '<div class="stufe-dot ' + (stufe >= 1 ? 'done' : '') + '"></div>' +
+        '<div class="stufe-dot ' + (stufe >= 2 ? 'done' : '') + '"></div>' +
+        '<div class="stufe-dot ' + (stufe >= 3 ? 'done' : '') + '"></div>' +
+      '</div>' +
+      '<div class="vocab-header">' +
+        '<div><div class="lemma">' + card.lemma.replace(' → C1', '') + '</div>' +
+        '<div style="margin-top:6px; display:flex; gap:6px;">' + tagsHtml + '</div></div>' +
+        imgHtml +
+      '</div>' +
+      '<p class="eyebrow">' + stufeLabel(stufe) + '</p>';
+
+    var body = '';
+    if (stufe === 1) body = renderStufe1(card);
+    else if (stufe === 2) body = renderStufe2(card);
+    else body = renderStufe3(card);
+
+    slot.innerHTML = '<div class="vocab-card card" style="border-left-color:var(--mod-wortschatz);">' + header + body + '</div>';
+    wireStageEvents(card, stufe);
+    renderSessionTrack();
+  }
+
+  function renderStufe1(card) {
+    var opts = card.stufe1.optionen.map(function (o, i) {
+      return '<button class="opt" data-i="' + i + '">' + o + '</button>';
+    }).join('');
+    return '<p style="font-size:15px; margin:8px 0 0;">' + card.stufe1.frage + '</p>' +
+      '<div class="opt-list">' + opts + '</div>' +
+      '<p style="font-size:13px; color:var(--ink-soft); margin-top:16px; line-height:1.6;">Beispiel: „' + card.beispiel + '"</p>' +
+      '<div id="wz-quality-slot"></div>';
+  }
+
+  function renderStufe2(card) {
+    return '<p style="font-size:15px; margin:8px 0 0;">Ergänzen Sie die Lücke.</p>' +
+      '<p class="cloze-sentence">' + card.stufe2.satz.replace('___', '<strong>___</strong>') + '</p>' +
+      '<input class="cloze-input" id="wz-cloze-input" type="text" placeholder="Antwort …" autocomplete="off" />' +
+      '<div class="cloze-feedback" id="wz-cloze-feedback"></div>' +
+      '<div style="margin-top:12px;"><button class="btn btn-primary" id="wz-cloze-check">Prüfen</button></div>' +
+      '<div id="wz-quality-slot"></div>';
+  }
+
+  function renderStufe3(card) {
+    return '<p style="font-size:15px; margin:8px 0 0;">' + card.stufe3.prompt + '</p>' +
+      '<textarea class="prod-textarea" id="wz-prod-input" placeholder="Ihr Satz …"></textarea>' +
+      '<p style="font-size:12px; color:var(--ink-soft);">Keine automatische Korrektur auf dieser Stufe — bewerten Sie selbst, wie leicht es fiel.</p>' +
+      '<div id="wz-quality-slot"></div>';
+  }
+
+  function qualityRowHtml() {
+    return '<div class="quality-row">' +
+      '<div class="quality-btn" data-q="1">Schwer</div>' +
+      '<div class="quality-btn" data-q="2">Mittel</div>' +
+      '<div class="quality-btn" data-q="3">Leicht</div>' +
+      '</div>';
+  }
+
+  function wireStageEvents(card, stufe) {
+    if (stufe === 1) {
+      var opts = document.querySelectorAll('#wz-card-slot .opt');
+      opts.forEach(function (btn) {
+        btn.addEventListener('click', function () {
+          var i = parseInt(btn.dataset.i, 10);
+          opts.forEach(function (o) { o.disabled = true; });
+          if (i === card.stufe1.korrekt) {
+            btn.classList.add('correct');
+            sessionCorrectCount++;
+          } else {
+            btn.classList.add('wrong');
+            opts[card.stufe1.korrekt].classList.add('correct');
+          }
+          showQualityRow(card, i === card.stufe1.korrekt);
+        });
+      });
+    } else if (stufe === 2) {
+      document.getElementById('wz-cloze-check').addEventListener('click', function () {
+        var input = document.getElementById('wz-cloze-input');
+        var val = input.value.trim().toLowerCase();
+        var ok = val === card.stufe2.loesung.toLowerCase();
+        input.classList.add(ok ? 'correct' : 'wrong');
+        input.disabled = true;
+        document.getElementById('wz-cloze-feedback').textContent =
+          ok ? 'Richtig.' : 'Lösung: „' + card.stufe2.loesung + '"';
+        if (ok) sessionCorrectCount++;
+        this.disabled = true;
+        showQualityRow(card, ok);
+      });
+    } else {
+      // Stufe 3: keine automatische Prüfung, Nutzer bewertet direkt selbst
+      showQualityRow(card, null);
+    }
+  }
+
+  function showQualityRow(card, wasCorrect) {
+    var slotEl = document.getElementById('wz-quality-slot');
+    slotEl.innerHTML = qualityRowHtml();
+    document.querySelectorAll('.quality-btn').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        var q = parseInt(btn.dataset.q, 10); // 1 schwer, 2 mittel, 3 leicht
+        advanceCard(card, q);
+      });
+    });
+  }
+
+  function advanceCard(card, quality) {
+    // sehr einfache Leitner-Logik: schwer -> Stufe bleibt/box zurück,
+    // mittel -> Stufe bleibt gleich für nächstes Mal, leicht -> Stufe steigt
+    var item = session[sessionIndex];
+    if (quality === 1) item.card.box = 1;
+    else if (quality === 3) item.card.box = Math.min(3, item.card.box + 1);
+    // quality === 2: box bleibt gleich
+
+    syncToSheet('save_progress', {
+      modul: 'wortschatz',
+      item_id: card.id,
+      ergebnis: quality === 1 ? 'schwer' : quality === 2 ? 'mittel' : 'leicht',
+      box_neu: item.card.box
+    });
+
+    sessionIndex++;
+    renderCurrentCard();
+  }
+
+  function renderSessionComplete() {
+    var box = document.getElementById('wz-session-complete');
+    box.style.display = 'block';
+    streak++;
+    syncToSheet('save_progress', {
+      modul: 'wortschatz',
+      item_id: 'session',
+      ergebnis: sessionCorrectCount + '/' + session.length,
+      box_neu: ''
+    });
+    box.innerHTML =
+      '<div class="complete-box">' +
+        '<div class="complete-mark">✓</div>' +
+        '<h2 style="font-size:20px; margin-bottom:8px;">Fertig für heute.</h2>' +
+        '<p style="font-size:13px; color:var(--ink-soft); margin-bottom:4px;">' +
+          sessionCorrectCount + ' von ' + session.length + ' richtig · Serie: ' + streak + ' Tage' +
+        '</p>' +
+        '<p style="font-size:13px; color:var(--ink-soft); margin-bottom:22px;">Keine weiteren Karten heute — kurz und regelmäßig schlägt lang und selten.</p>' +
+        '<button class="btn btn-ghost" id="wz-back-dashboard">Zurück zum Dashboard</button>' +
+      '</div>';
+    document.getElementById('wz-back-dashboard').addEventListener('click', function () {
+      document.querySelector('.navitem[data-page="dashboard"]').click();
+    });
+  }
+
+  // Session neu aufbauen, sobald die Wortschatz-Seite geöffnet wird
+  document.querySelector('.navitem[data-page="wortschatz"]').addEventListener('click', function () {
+    buildSession();
+  });
+</script>
+
+</body>
+</html>
