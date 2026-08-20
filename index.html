@@ -48,17 +48,17 @@
   .eyebrow {
     font-family: 'IBM Plex Mono', monospace;
     font-size: 11px;
-    letter-spacing: 0.12em;
+    letter-spacing: 0.06em;
     color: var(--ink-soft);
     text-transform: uppercase;
   }
-  h1, h2, h3 { font-family: 'Archivo', sans-serif; font-weight: 600; margin: 0; letter-spacing: -0.01em; }
+  h1, h2, h3 { font-family: 'Archivo', sans-serif; font-weight: 600; margin: 0; letter-spacing: -0.005em; }
 
   /* ---------- shell / nav ---------- */
   .shell { display: grid; grid-template-columns: 220px 1fr; min-height: 100vh; }
   .sidebar {
-    background: var(--ink);
-    color: var(--paper);
+    background: #DCEAF6;
+    color: #17324A;
     padding: 24px 16px;
     display: flex;
     flex-direction: column;
@@ -67,25 +67,25 @@
   .brand {
     font-family: 'Archivo', sans-serif;
     font-size: 19px;
-    font-weight: 700;
-    letter-spacing: -0.01em;
+    font-weight: 600;
+    letter-spacing: -0.005em;
     padding: 0 10px 22px 10px;
-    text-transform: uppercase;
+    color: #17324A;
   }
   .navitem {
     display: flex;
     align-items: center;
     gap: 11px;
     padding: 10px 10px;
-    border-radius: 2px;
-    font-size: 13px;
-    font-family: 'IBM Plex Mono', monospace;
-    letter-spacing: 0.03em;
+    border-radius: 6px;
+    font-size: 14px;
+    font-family: 'IBM Plex Sans', sans-serif;
+    font-weight: 500;
     cursor: pointer;
-    color: rgba(241,240,234,0.65);
+    color: #4A6478;
   }
-  .navitem:hover { background: rgba(241,240,234,0.08); color: var(--paper); }
-  .navitem.active { background: rgba(241,240,234,0.12); color: var(--paper); font-weight: 500; }
+  .navitem:hover { background: rgba(255,255,255,0.5); color: #17324A; }
+  .navitem.active { background: #FFFFFF; color: #17324A; font-weight: 600; }
   .navitem .dot {
     width: 10px; height: 10px; border-radius: 1px;
     background: var(--flag, currentColor); opacity: 0.55; flex-shrink: 0;
@@ -130,13 +130,11 @@
   .tag.stil-geh { background: #E2E7EC; color: #3A4C5E; }
 
   .btn {
-    font-family: 'IBM Plex Mono', monospace;
+    font-family: 'IBM Plex Sans', sans-serif;
     font-weight: 500;
-    font-size: 12px;
-    letter-spacing: 0.03em;
-    text-transform: uppercase;
-    padding: 10px 18px;
-    border-radius: 1px;
+    font-size: 13.5px;
+    padding: 10px 20px;
+    border-radius: 6px;
     cursor: pointer;
     border: none;
   }
@@ -196,8 +194,8 @@
 
   .quality-row { display: flex; gap: 8px; margin-top: 14px; }
   .quality-btn {
-    flex: 1; font-family: 'IBM Plex Mono', monospace; font-size: 11px; letter-spacing: 0.03em;
-    text-transform: uppercase; padding: 10px 6px; border-radius: 1px; cursor: pointer; text-align: center;
+    flex: 1; font-family: 'IBM Plex Sans', sans-serif; font-weight: 500; font-size: 13px;
+    padding: 10px 6px; border-radius: 6px; cursor: pointer; text-align: center;
     border: 1px solid var(--line-strong); background: var(--card);
   }
   .quality-btn[data-q="1"]:hover { border-color: var(--bad); color: var(--bad); }
@@ -228,10 +226,10 @@
 
   #user-badge {
     display: flex; align-items: center; gap: 8px; padding: 8px 10px; margin-top: 10px;
-    border-radius: 2px; background: rgba(241,240,234,0.06); cursor: pointer;
+    border-radius: 6px; background: rgba(255,255,255,0.5); cursor: pointer;
   }
-  #user-badge img { width: 22px; height: 22px; border-radius: 1px; }
-  #user-badge span { font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: rgba(241,240,234,0.7); }
+  #user-badge img { width: 22px; height: 22px; border-radius: 4px; }
+  #user-badge span { font-family: 'IBM Plex Sans', sans-serif; font-weight: 500; font-size: 12px; color: #17324A; }
 
   /* ---------- Grammatik ---------- */
   .drill-box { padding: 20px 24px; }
