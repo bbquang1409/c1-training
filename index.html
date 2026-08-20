@@ -211,17 +211,41 @@
 
   /* ---------- Login gate ---------- */
   #login-gate {
-    position: fixed; inset: 0; background: var(--paper); color: var(--ink);
+    position: fixed; inset: 0;
+    background-color: var(--paper);
+    background-image: radial-gradient(circle, #DAD5C4 1px, transparent 1px);
+    background-size: 22px 22px;
+    color: var(--ink);
     display: flex; flex-direction: column; align-items: center; justify-content: center;
     gap: 18px; z-index: 999;
   }
-  #login-gate .lg-card {
-    background: var(--card); border: 1px solid var(--line); border-top: 3px solid var(--navy);
-    border-radius: 2px; padding: 44px 48px; display: flex; flex-direction: column;
-    align-items: center; gap: 16px; max-width: 340px; box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+  #login-gate .lg-emblem {
+    width: 84px; height: 84px; position: relative; margin-bottom: 4px;
   }
-  #login-gate .lg-title { font-family: 'Archivo', sans-serif; font-size: 22px; font-weight: 700; text-transform: uppercase; letter-spacing: -0.01em; }
-  #login-gate .lg-sub { font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: var(--ink-soft); letter-spacing: 0.08em; margin-top: -12px; }
+  #login-gate .lg-emblem .sh {
+    position: absolute; opacity: 0.94;
+  }
+  #login-gate .lg-emblem .sh-square {
+    width: 46px; height: 46px; background: #FFCE00;
+    top: 4px; left: 4px; transform: rotate(-8deg);
+  }
+  #login-gate .lg-emblem .sh-circle {
+    width: 42px; height: 42px; border-radius: 50%; background: #1A1A1A;
+    bottom: 2px; right: 2px;
+  }
+  #login-gate .lg-emblem .sh-triangle {
+    width: 0; height: 0;
+    border-left: 22px solid transparent; border-right: 22px solid transparent;
+    border-bottom: 38px solid #DD0000;
+    top: 14px; right: 6px; transform: rotate(12deg);
+  }
+  #login-gate .lg-card {
+    background: var(--card); border: 1px solid var(--line);
+    border-radius: 3px; padding: 40px 48px 44px; display: flex; flex-direction: column;
+    align-items: center; gap: 14px; max-width: 340px; box-shadow: 0 6px 24px rgba(20,30,40,0.07);
+  }
+  #login-gate .lg-title { font-family: 'Archivo', sans-serif; font-size: 24px; font-weight: 700; letter-spacing: -0.01em; }
+  #login-gate .lg-sub { font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: var(--ink-soft); letter-spacing: 0.08em; margin-top: -10px; text-align: center; }
   #login-gate .lg-hint { font-size: 12px; color: var(--ink-soft); max-width: 260px; text-align: center; line-height: 1.6; margin-top: 4px; }
 
   #user-badge {
@@ -230,6 +254,21 @@
   }
   #user-badge img { width: 22px; height: 22px; border-radius: 4px; }
   #user-badge span { font-family: 'IBM Plex Sans', sans-serif; font-weight: 500; font-size: 12px; color: #1E2E38; }
+
+  .logout-menu {
+    display: none; position: absolute; bottom: calc(100% + 6px); left: 0; right: 0;
+    background: var(--card); border: 1px solid var(--line); border-radius: 6px;
+    box-shadow: 0 4px 14px rgba(0,0,0,0.1); padding: 10px; z-index: 20;
+  }
+  .logout-menu-email {
+    font-family: 'IBM Plex Mono', monospace; font-size: 10px; color: var(--ink-soft);
+    padding: 2px 4px 8px; word-break: break-all; border-bottom: 1px solid var(--line); margin-bottom: 8px;
+  }
+  .logout-btn {
+    width: 100%; font-family: 'IBM Plex Sans', sans-serif; font-weight: 500; font-size: 13px;
+    padding: 8px 10px; border-radius: 4px; border: none; background: var(--bad-bg); color: var(--bad); cursor: pointer;
+  }
+  .logout-btn:hover { background: var(--bad); color: #fff; }
 
   /* ---------- Grammatik ---------- */
   .drill-box { padding: 20px 24px; }
@@ -296,6 +335,11 @@
 
 <div id="login-gate">
   <div class="lg-card">
+    <div class="lg-emblem">
+      <div class="sh sh-square"></div>
+      <div class="sh sh-triangle"></div>
+      <div class="sh sh-circle"></div>
+    </div>
     <div class="lg-title">C1 Training</div>
     <div class="lg-sub">ANMELDEN, UM FORTZUFAHREN</div>
     <div id="gsi-button-slot"></div>
@@ -314,6 +358,7 @@
     <div class="navitem" data-page="schreiben"><span class="dot" style="--flag:#E4E4E1;"></span>06 Schreiben</div>
     <div class="navitem" data-page="fehler"><span class="dot" style="--flag:var(--mod-fehler);"></span>07 Fehler</div>
     <div style="flex:1;"></div>
+    <div id="app-version" style="font-family:'IBM Plex Mono', monospace; font-size:10px; color:#6B7C87; padding:4px 10px 2px;"></div>
     <div id="user-badge" style="display:none;"></div>
   </nav>
 
@@ -496,6 +541,15 @@
   // AUTH — Google Sign-In (Identity Services), gate app, sync helper
   // =====================================================================
 
+  // Versionierung: X.Y — Y=0 ist ein Meilenstein (neue Inhalte/Module),
+  // Nachkommastellen (.01, .02...) sind kleine Anpassungen innerhalb davon.
+  // Bei jeder Änderung von Hand hochzählen.
+  var APP_VERSION = "1.0";
+  document.addEventListener('DOMContentLoaded', function () {
+    var el = document.getElementById('app-version');
+    if (el) el.textContent = 'v' + APP_VERSION;
+  });
+
   var GOOGLE_CLIENT_ID = "489249673296-0dcroh7l6ou15s64j863shb6dr78ce9c.apps.googleusercontent.com";
 
   // Nach dem Deploy des Apps Script (Web app) hier die .../exec-URL eintragen.
@@ -542,18 +596,31 @@
     document.getElementById('login-gate').style.display = 'none';
     var badge = document.getElementById('user-badge');
     badge.style.display = 'flex';
+    badge.style.position = 'relative';
     badge.innerHTML =
       '<img src="' + currentUser.picture + '" alt="" />' +
-      '<span>' + currentUser.name.split(' ')[0] + '</span>';
-    badge.onclick = function () {
-      if (confirm('Abmelden?')) {
-        try {
-          localStorage.removeItem('c1_user');
-          localStorage.removeItem('c1_id_token');
-        } catch (e) {}
-        location.reload();
-      }
+      '<span>' + currentUser.name.split(' ')[0] + '</span>' +
+      '<div id="logout-menu" class="logout-menu">' +
+        '<div class="logout-menu-email">' + currentUser.email + '</div>' +
+        '<button id="logout-btn" class="logout-btn">Abmelden</button>' +
+      '</div>';
+    badge.onclick = function (ev) {
+      ev.stopPropagation();
+      var menu = document.getElementById('logout-menu');
+      menu.style.display = menu.style.display === 'block' ? 'none' : 'block';
     };
+    document.getElementById('logout-btn').onclick = function (ev) {
+      ev.stopPropagation();
+      try {
+        localStorage.removeItem('c1_user');
+        localStorage.removeItem('c1_id_token');
+      } catch (e) {}
+      location.reload();
+    };
+    document.addEventListener('click', function () {
+      var menu = document.getElementById('logout-menu');
+      if (menu) menu.style.display = 'none';
+    });
   }
 
   function initGoogleSignIn() {
