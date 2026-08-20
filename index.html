@@ -57,8 +57,8 @@
   /* ---------- shell / nav ---------- */
   .shell { display: grid; grid-template-columns: 220px 1fr; min-height: 100vh; }
   .sidebar {
-    background: #DCEAF6;
-    color: #17324A;
+    background: #C3CDD3;
+    color: #1E2E38;
     padding: 24px 16px;
     display: flex;
     flex-direction: column;
@@ -70,7 +70,7 @@
     font-weight: 600;
     letter-spacing: -0.005em;
     padding: 0 10px 22px 10px;
-    color: #17324A;
+    color: #1E2E38;
   }
   .navitem {
     display: flex;
@@ -82,10 +82,10 @@
     font-family: 'IBM Plex Sans', sans-serif;
     font-weight: 500;
     cursor: pointer;
-    color: #4A6478;
+    color: #52626B;
   }
-  .navitem:hover { background: rgba(255,255,255,0.5); color: #17324A; }
-  .navitem.active { background: #FFFFFF; color: #17324A; font-weight: 600; }
+  .navitem:hover { background: rgba(255,255,255,0.55); color: #1E2E38; }
+  .navitem.active { background: #FFFFFF; color: #1E2E38; font-weight: 600; }
   .navitem .dot {
     width: 10px; height: 10px; border-radius: 1px;
     background: var(--flag, currentColor); opacity: 0.55; flex-shrink: 0;
@@ -229,7 +229,7 @@
     border-radius: 6px; background: rgba(255,255,255,0.5); cursor: pointer;
   }
   #user-badge img { width: 22px; height: 22px; border-radius: 4px; }
-  #user-badge span { font-family: 'IBM Plex Sans', sans-serif; font-weight: 500; font-size: 12px; color: #17324A; }
+  #user-badge span { font-family: 'IBM Plex Sans', sans-serif; font-weight: 500; font-size: 12px; color: #1E2E38; }
 
   /* ---------- Grammatik ---------- */
   .drill-box { padding: 20px 24px; }
@@ -518,6 +518,14 @@
     } catch (e) { return null; }
   }
 
+  // Google id_tokens tragen ein "exp"-Feld (Unix-Sekunden). Läuft meist nach
+  // ~1 Stunde ab — danach lehnt Apps Script Anfragen ab.
+  function isTokenExpired(token) {
+    var payload = decodeJwt(token);
+    if (!payload || !payload.exp) return true;
+    return Date.now() / 1000 > payload.exp;
+  }
+
   function handleCredentialResponse(response) {
     var payload = decodeJwt(response.credential);
     if (!payload) return;
@@ -560,17 +568,36 @@
     );
   }
 
-  // Beim Laden: falls bereits angemeldet (localStorage), Login-Gate überspringen.
-  // Der id_token kann inzwischen abgelaufen sein — Aufrufe an Apps Script
-  // schlagen dann mit "unauthorized" fehl, und der Nutzer muss sich neu anmelden.
+  // Sitzung abgelaufen (>1 Std.) — Login-Gate erneut zeigen, aber mit
+  // eigenem Hinweistext statt der normalen Erst-Anmeldung, und den alten
+  // (ungültigen) Token verwerfen.
+  function forceReAuth() {
+    currentIdToken = null;
+    try { localStorage.removeItem('c1_id_token'); } catch (e) {}
+    var gate = document.getElementById('login-gate');
+    gate.style.display = 'flex';
+    var hint = gate.querySelector('.lg-hint');
+    var sub = gate.querySelector('.lg-sub');
+    if (sub) sub.textContent = 'SITZUNG ABGELAUFEN — BITTE ERNEUT ANMELDEN';
+    if (hint) hint.textContent = 'Aus Sicherheitsgründen läuft die Anmeldung nach ca. 1 Stunde ab. Ihr bisheriger Fortschritt bleibt erhalten.';
+    document.getElementById('user-badge').style.display = 'none';
+    initGoogleSignIn();
+  }
+
+  // Beim Laden: falls bereits angemeldet (localStorage) UND Token noch
+  // gültig, Login-Gate überspringen. Ist der Token abgelaufen, direkt die
+  // "Sitzung abgelaufen"-Variante zeigen statt der normalen Erst-Anmeldung.
   (function () {
     try {
       var savedUser = localStorage.getItem('c1_user');
       var savedToken = localStorage.getItem('c1_id_token');
-      if (savedUser && savedToken) {
+      if (savedUser && savedToken && !isTokenExpired(savedToken)) {
         currentUser = JSON.parse(savedUser);
         currentIdToken = savedToken;
         showApp();
+      } else if (savedUser && savedToken) {
+        currentUser = JSON.parse(savedUser); // für Anzeige, falls Badge vor Re-Login schon gebraucht wird
+        forceReAuth();
       } else {
         initGoogleSignIn();
       }
@@ -580,15 +607,22 @@
   })();
 
   // Generischer Helfer, um Ergebnisse an das Apps-Script-Backend zu schicken.
-  // Läuft "fire and forget" — schlägt der Sync fehl, bleibt die App trotzdem
-  // benutzbar, weil Wortschatz/Grammatik ohnehin lokal weiterlaufen.
+  // Läuft "fire and forget" für den Aufrufer — schlägt der Sync konkret mit
+  // "unauthorized" fehl (Token abgelaufen o.ä.), wird automatisch die
+  // Re-Login-Ansicht gezeigt. Netzwerkfehler werden sonst ignoriert, weil
+  // Wortschatz/Grammatik ohnehin lokal weiterlaufen.
   function syncToSheet(action, data) {
     if (!SHEET_API_URL || !currentIdToken) return;
     fetch(SHEET_API_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'text/plain' }, // vermeidet CORS-Preflight bei Apps Script
       body: JSON.stringify({ action: action, token: currentIdToken, data: data })
-    }).catch(function () { /* still fine, local state already saved */ });
+    })
+      .then(function (res) { return res.json(); })
+      .then(function (json) {
+        if (json && json.error === 'unauthorized') forceReAuth();
+      })
+      .catch(function () { /* still fine, local state already saved */ });
   }
 
   document.querySelectorAll('.navitem').forEach(function (item) {
